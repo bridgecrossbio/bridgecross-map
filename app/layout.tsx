@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { SignupModalProvider } from "@/lib/signup-modal-context";
 import Header from "@/components/Header";
 
 const geistSans = Geist({
@@ -19,8 +20,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${geistSans.variable} antialiased`}>
       <body>
         <AuthProvider>
-          <Header />
-          {children}
+          <SignupModalProvider>
+            <Header />
+            {children}
+          </SignupModalProvider>
         </AuthProvider>
       </body>
     </html>

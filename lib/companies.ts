@@ -1,11 +1,11 @@
 import { Category } from "@/types/company";
 
 export const CATEGORY_COLORS: Record<Category, string> = {
-  Sequencing: "#3B82F6",          // blue
-  "DNA Synthesis": "#10B981",     // emerald
-  "Liquid Biopsy": "#8B5CF6",     // purple
-  "AI Drug Discovery": "#F59E0B", // amber
-  "China VC": "#EC4899",          // pink
+  Sequencing: "#0084C6",
+  "DNA Synthesis": "#00874A",
+  "Liquid Biopsy": "#C70000",
+  "AI Drug Discovery": "#E05E00",
+  "China VC": "#A1845C",
 };
 
 export const CATEGORIES: Category[] = [

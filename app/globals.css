@@ -1,11 +1,30 @@
 @import "tailwindcss";
 
+:root {
+  --font-heading: Georgia, "Times New Roman", serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --bg-primary: #F5EDE0;
+  --bg-sidebar: #FFFFFF;
+  --bg-subtle: #EDE3D3;
+  --accent-red: #B83A2A;
+  --accent-red-hover: #D4503E;
+  --text-primary: #1C1C1C;
+  --text-secondary: #6B5E52;
+  --border: #E0D5C5;
+}
+
 html,
 body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  color: #1C1C1C;
+  background: #F5EDE0;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-heading);
 }
 
 /* Mapbox overrides — keep canvas below the fixed header */
@@ -18,14 +37,13 @@ body {
   z-index: 0;
 }
 
-
 .mapboxgl-ctrl-bottom-right {
   bottom: 1.5rem;
   right: 1.5rem;
 }
 
 .mapboxgl-ctrl-group {
-  border-radius: 0.75rem !important;
+  border-radius: 0.5rem !important;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 1px 4px rgba(28, 28, 28, 0.08) !important;
 }

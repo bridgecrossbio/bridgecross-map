@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Company } from "@/types/company";
@@ -12,134 +12,211 @@ interface MapProps {
   onSelectCompany: (company: Company) => void;
 }
 
-// Pin SVG path — a teardrop marker
-function createMarkerEl(color: string, isSelected: boolean): HTMLDivElement {
-  const el = document.createElement("div");
-  el.style.cssText = `
-    width: 32px;
-    height: 40px;
-    cursor: pointer;
-    transition: transform 0.15s ease, filter 0.15s ease;
-  `;
-  if (isSelected) {
-    el.style.transform = "scale(1.3)";
-    el.style.filter = "drop-shadow(0 4px 8px rgba(0,0,0,0.35))";
-  } else {
-    el.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.25))";
-  }
-
-  el.innerHTML = `
-    <svg viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="40">
-      <path d="M16 1C8.82 1 3 6.82 3 14C3 22.5 16 39 16 39C16 39 29 22.5 29 14C29 6.82 23.18 1 16 1Z"
-        fill="${color}" stroke="white" stroke-width="2"/>
-      <circle cx="16" cy="14" r="5" fill="white" opacity="0.85"/>
-    </svg>
-  `;
-  return el;
+function toGeoJSON(companies: Company[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: companies.map((c) => ({
+      type: "Feature" as const,
+      geometry: {
+        type: "Point" as const,
+        coordinates: [c.lng, c.lat] as [number, number],
+      },
+      properties: {
+        id: String(c.id),
+        color: CATEGORY_COLORS[c.category] ?? "#CD5438",
+      },
+    })),
+  };
 }
 
-export default function Map({ companies, selectedCompany, onSelectCompany }: MapProps) {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<globalThis.Map<string, { marker: mapboxgl.Marker; el: HTMLDivElement }>>(new globalThis.Map());
+// Cluster circle radius steps (radius = diameter / 2)
+// 2-5 → 35px, 6-15 → 45px, 16-30 → 55px, 30+ → 65px
+const CLUSTER_RADIUS_EXPR = [
+  "step", ["get", "point_count"],
+  17.5,        // < 6  →  35px diameter
+  6,  22.5,    // < 16 →  45px
+  16, 27.5,    // < 30 →  55px
+  30, 32.5,    // 30+  →  65px
+] as mapboxgl.Expression;
 
-  // Stable callback ref to avoid re-creating markers on every render
+const CLUSTER_HALO_EXPR = [
+  "step", ["get", "point_count"],
+  24, 6, 29, 16, 34, 30, 39,
+] as mapboxgl.Expression;
+
+export default function Map({ companies, selectedCompany, onSelectCompany }: MapProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  // Always-current refs so event handlers don't stale-close over props
+  const companiesRef = useRef(companies);
   const onSelectRef = useRef(onSelectCompany);
+  companiesRef.current = companies;
   onSelectRef.current = onSelectCompany;
 
-  // Initialise map once
+  // ── Init map once ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!token) {
-      console.warn("NEXT_PUBLIC_MAPBOX_TOKEN not set — map won't load");
-      return;
-    }
+    if (!token) return;
 
     mapboxgl.accessToken = token;
 
     const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
+      container: containerRef.current,
       style: "mapbox://styles/mapbox/light-v11",
-      center: [104.1954, 35.8617], // geographic centre of China
+      center: [104.1954, 35.8617],
       zoom: 4,
       minZoom: 2,
     });
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
 
-    mapRef.current = map;
+    map.on("load", () => {
+      // ── GeoJSON source with built-in clustering ──────────────────────────
+      map.addSource("companies", {
+        type: "geojson",
+        data: toGeoJSON(companiesRef.current),
+        cluster: true,
+        clusterMaxZoom: 12,
+        clusterRadius: 50,
+      });
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+      // ── Cluster halo (subtle ring behind the circle) ─────────────────────
+      map.addLayer({
+        id: "cluster-halo",
+        type: "circle",
+        source: "companies",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": "#1C1C1C",
+          "circle-radius": CLUSTER_HALO_EXPR,
+          "circle-opacity": 0.18,
+        },
+      });
+
+      // ── Cluster filled circle ─────────────────────────────────────────────
+      map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "companies",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": "#1C1C1C",
+          "circle-radius": CLUSTER_RADIUS_EXPR,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "rgba(255,255,255,0.55)",
+        },
+      });
+
+      // ── Cluster count label ───────────────────────────────────────────────
+      map.addLayer({
+        id: "cluster-count",
+        type: "symbol",
+        source: "companies",
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": "{point_count_abbreviated}",
+          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+          "text-size": 13,
+        },
+        paint: { "text-color": "#ffffff" },
+      });
+
+      // ── Individual pins ───────────────────────────────────────────────────
+      map.addLayer({
+        id: "unclustered-point",
+        type: "circle",
+        source: "companies",
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+          "circle-color": ["get", "color"],
+          "circle-radius": 8,
+          "circle-stroke-width": 2.5,
+          "circle-stroke-color": "#ffffff",
+        },
+      });
+
+      // ── Click: cluster → zoom in ──────────────────────────────────────────
+      map.on("click", "clusters", (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
+        if (!features.length) return;
+
+        const clusterId = features[0].properties?.cluster_id as number;
+        const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
+        const source = map.getSource("companies") as mapboxgl.GeoJSONSource;
+
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || zoom == null) return;
+          map.easeTo({ center: coords, zoom });
+        });
+      });
+
+      // ── Click: individual pin → select company ────────────────────────────
+      map.on("click", "unclustered-point", (e) => {
+        const id = e.features?.[0]?.properties?.id as string | undefined;
+        if (!id) return;
+        const company = companiesRef.current.find((c) => String(c.id) === id);
+        if (company) onSelectRef.current(company);
+      });
+
+      // ── Cursor pointers ───────────────────────────────────────────────────
+      for (const layer of ["clusters", "unclustered-point"]) {
+        map.on("mouseenter", layer, () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
+      }
+    });
+
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Add/update markers when companies list changes
+  // ── Update source data + cluster colour when filter / search changes ─────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const existingIds = new Set(markersRef.current.keys());
-    const incomingIds = new Set(companies.map((c) => c.id));
+    const source = map.getSource("companies") as mapboxgl.GeoJSONSource | undefined;
+    source?.setData(toGeoJSON(companies));
 
-    // Remove markers no longer in the filtered list
-    existingIds.forEach((id) => {
-      if (!incomingIds.has(id)) {
-        markersRef.current.get(id)?.marker.remove();
-        markersRef.current.delete(id);
-      }
-    });
+    if (!map.getLayer("clusters")) return;
 
-    // Add new markers
-    companies.forEach((company) => {
-      if (markersRef.current.has(company.id)) return;
+    const uniqueCategories = [...new Set(companies.map((c) => c.category))];
+    const clusterColor =
+      uniqueCategories.length === 1
+        ? (CATEGORY_COLORS[uniqueCategories[0]] ?? "#1C1C1C")
+        : "#1C1C1C";
 
-      const color = CATEGORY_COLORS[company.category];
-      const el = createMarkerEl(color, false);
-
-      el.addEventListener("click", () => {
-        onSelectRef.current(company);
-      });
-
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([company.lng, company.lat])
-        .addTo(map);
-
-      markersRef.current.set(company.id, { marker, el });
-    });
+    map.setPaintProperty("clusters", "circle-color", clusterColor);
+    map.setPaintProperty("cluster-halo", "circle-color", clusterColor);
   }, [companies]);
 
-  // Update selected marker appearance
+  // ── Highlight selected pin ─────────────────────────────────────────────────
   useEffect(() => {
-    markersRef.current.forEach(({ el }, id) => {
-      const isSelected = selectedCompany?.id === id;
-      if (isSelected) {
-        el.style.transform = "scale(1.35)";
-        el.style.filter = "drop-shadow(0 4px 10px rgba(0,0,0,0.4))";
-        el.style.zIndex = "10";
-      } else {
-        el.style.transform = "scale(1)";
-        el.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.25))";
-        el.style.zIndex = "1";
-      }
-    });
+    const map = mapRef.current;
+    if (!map?.getLayer("unclustered-point")) return;
 
-    // Fly to selected company
-    if (selectedCompany && mapRef.current) {
-      mapRef.current.flyTo({
+    const selectedId = selectedCompany ? String(selectedCompany.id) : "__none__";
+
+    map.setPaintProperty("unclustered-point", "circle-radius", [
+      "case", ["==", ["get", "id"], selectedId], 11, 8,
+    ]);
+    map.setPaintProperty("unclustered-point", "circle-stroke-width", [
+      "case", ["==", ["get", "id"], selectedId], 3.5, 2.5,
+    ]);
+
+    if (selectedCompany) {
+      map.flyTo({
         center: [selectedCompany.lng, selectedCompany.lat],
-        zoom: Math.max(mapRef.current.getZoom(), 6),
+        zoom: Math.max(map.getZoom(), 6),
         duration: 700,
-        offset: [120, 0], // offset left to account for panel on right
+        offset: [120, 0],
       });
     }
   }, [selectedCompany]);
 
   return (
-    <div ref={mapContainerRef} className="w-full h-full">
+    <div ref={containerRef} className="w-full h-full">
       {!process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-20">
           <div className="text-center max-w-sm px-6">

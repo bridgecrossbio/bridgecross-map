@@ -75,7 +75,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative z-0 w-screen overflow-hidden h-[calc(100vh-3.5rem)] mt-14">
+    <main className="relative z-0 w-screen overflow-hidden h-[calc(100vh-92px)] mt-[92px]">
       <Map
         companies={filteredCompanies}
         selectedCompany={selectedCompany}

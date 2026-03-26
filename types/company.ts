@@ -24,4 +24,5 @@ export interface Company {
   technology_type: string | null;
   employees_range: string | null;
   listed: boolean | null;
+  logo_url: string | null;
 }

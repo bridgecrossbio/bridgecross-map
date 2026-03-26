@@ -4,24 +4,18 @@ import { ReactNode } from "react";
 
 export default function PageLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen pt-14" style={{ backgroundColor: "#F5EFE6" }}>
-      <main className="max-w-3xl mx-auto px-6 py-12">
+    <div className="min-h-screen pt-[92px]" style={{ backgroundColor: "#F5EDE0" }}>
+      <main className="max-w-[740px] mx-auto px-6 py-12">
         {children}
       </main>
 
-      <footer className="border-t border-[#8B3A2F]/10 bg-white/60 mt-16">
-        <div className="max-w-3xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
-          <span>© {new Date().getFullYear()} BridgeCross Bio. Independent research.</span>
-          <a
-            href="https://bridgecrossbio.substack.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 font-medium transition-colors hover:opacity-80"
-            style={{ color: "#C4622D" }}
-          >
-            <span className="w-4 h-4 rounded flex items-center justify-center text-white text-[9px] font-bold" style={{ backgroundColor: "#C4622D" }}>S</span>
-            Read our research
-          </a>
+      <footer className="mt-16" style={{ borderTop: "1px solid #E0D5C5", backgroundColor: "#EDE3D3" }}>
+        <div className="max-w-[740px] mx-auto px-6 py-4 flex items-center gap-3 flex-nowrap overflow-hidden" style={{ color: "#6B5E52", fontSize: "12px" }}>
+          <span className="flex-shrink-0">© {new Date().getFullYear()} BridgeCross Bio</span>
+          <span style={{ color: "#E0D5C5" }}>·</span>
+          <a href="/contact" className="flex-shrink-0 transition-colors hover:text-[#B83A2A]" style={{ color: "#6B5E52" }}>Contact</a>
+          <span style={{ color: "#E0D5C5" }}>·</span>
+          <a href="https://www.linkedin.com/company/bridgecross-bio/" target="_blank" rel="noopener noreferrer" className="flex-shrink-0 transition-colors hover:text-[#B83A2A]" style={{ color: "#6B5E52" }}>LinkedIn</a>
         </div>
       </footer>
     </div>

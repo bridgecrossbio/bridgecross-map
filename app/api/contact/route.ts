@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   const html = `
     <div style="font-family:sans-serif;max-width:600px;">
-      <h2 style="color:#8B3A2F;margin-bottom:4px;">${type}</h2>
+      <h2 style="color:#CD5438;margin-bottom:4px;">${type}</h2>
       <p style="color:#888;font-size:13px;margin-top:0;">Submitted via BridgeCross Map</p>
       <table style="border-collapse:collapse;width:100%;margin-top:16px;font-size:14px;">
         ${rows}

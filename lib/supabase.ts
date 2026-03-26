@@ -9,7 +9,7 @@ export async function fetchCompanies() {
   const { data, error } = await supabase
     .from("companies")
     .select(
-      "id, name, name_chinese, category, sub_category, founded, city, province, lat, lng, funding_total, funding_stage, website, description, key_products, technology_type, employees_range, listed"
+      "id, name, name_chinese, category, sub_category, founded, city, province, lat, lng, funding_total, funding_stage, website, description, key_products, technology_type, employees_range, listed, logo_url"
     );
 
   if (error) {

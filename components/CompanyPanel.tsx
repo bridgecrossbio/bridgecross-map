@@ -1,44 +1,55 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Company } from "@/types/company";
 import { CATEGORY_COLORS } from "@/lib/companies";
+import { supabase } from "@/lib/supabase";
+import { useSignupModal } from "@/lib/signup-modal-context";
 
 interface CompanyPanelProps {
   company: Company;
   onClose: () => void;
-  hasAccess: boolean;
-  isLoggedIn: boolean;
+  hasAccess: boolean;  // Tier 2: paid or active trial
+  isLoggedIn: boolean; // used to distinguish trial-expired from anonymous
 }
 
 export default function CompanyPanel({ company, onClose, hasAccess, isLoggedIn }: CompanyPanelProps) {
-  const color = CATEGORY_COLORS[company.category] ?? "#8B3A2F";
-  const router = useRouter();
+  const color = CATEGORY_COLORS[company.category] ?? "#B83A2A";
+  const { openModal } = useSignupModal();
 
   return (
-    <div className="absolute bottom-6 right-6 z-40 w-80 bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div
+      className="absolute bottom-6 right-6 z-40 w-80 bg-white rounded-2xl overflow-hidden"
+      style={{ boxShadow: "0 4px 24px rgba(28,28,28,0.12)" }}
+    >
       {/* Colour strip */}
       <div className="h-1.5" style={{ backgroundColor: color }} />
 
-      <div className="p-5 max-h-[80vh] overflow-y-auto">
+      <div className="p-5 max-h-[82vh] overflow-y-auto">
+        {/* Logo — always visible if present */}
+        {company.logo_url && (
+          <LogoImage domain={company.logo_url.replace(/^https?:\/\/logo\.clearbit\.com\//, "")} name={company.name} />
+        )}
+
         {/* Header — always visible */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
             <span
-              className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5"
-              style={{ backgroundColor: color + "22", color }}
+              className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 text-white"
+              style={{ backgroundColor: color }}
             >
               {company.category === "China VC" ? "VC" : company.category}
               {company.sub_category ? ` · ${company.sub_category}` : ""}
             </span>
-            <h2 className="text-lg font-bold text-gray-900 leading-tight">{company.name}</h2>
+            <h2 className="text-lg font-bold leading-tight" style={{ color: "#1C1C1C", fontFamily: "Georgia, serif" }}>{company.name}</h2>
             {company.name_chinese && (
-              <p className="text-sm text-gray-400 mt-0.5">{company.name_chinese}</p>
+              <p className="text-sm mt-0.5" style={{ color: "#6B5E52" }}>{company.name_chinese}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 mt-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+            className="flex-shrink-0 mt-0.5 transition-colors"
+            style={{ color: "#6B5E52" }}
             aria-label="Close panel"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -47,28 +58,29 @@ export default function CompanyPanel({ company, onClose, hasAccess, isLoggedIn }
           </button>
         </div>
 
-        {/* Gated content */}
+        {/* Tier-gated content */}
         {hasAccess ? (
-          <FullDetail company={company} color={color} />
+          <FullDetail company={company} />
+        ) : isLoggedIn ? (
+          <TrialExpiredOverlay />
         ) : (
-          <GateOverlay isLoggedIn={isLoggedIn} onAction={() => router.push("/auth")} color={color} />
+          <AnonymousOverlay company={company} onStartTrial={openModal} />
         )}
       </div>
     </div>
   );
 }
 
-function FullDetail({ company, color }: { company: Company; color: string }) {
+// ── Tier 2: Full access ────────────────────────────────────────────────────────
+function FullDetail({ company }: { company: Company }) {
   return (
     <>
       {company.description && (
-        <p className="text-sm text-gray-600 leading-relaxed mb-4">{company.description}</p>
+        <p className="text-sm leading-relaxed mb-4" style={{ color: "#6B5E52" }}>{company.description}</p>
       )}
 
       <dl className="space-y-1.5 text-sm mb-4">
-        <Row label="Location">
-          {company.city}{company.province ? `, ${company.province}` : ""}
-        </Row>
+        <Row label="Location">{company.city}{company.province ? `, ${company.province}` : ""}</Row>
         {company.founded && <Row label="Founded">{company.founded}</Row>}
         {company.funding_stage && <Row label="Stage">{company.funding_stage}</Row>}
         {company.funding_total && <Row label="Funding">{company.funding_total}</Row>}
@@ -79,60 +91,53 @@ function FullDetail({ company, color }: { company: Company; color: string }) {
 
       {company.key_products && (
         <div className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#8B3A2F80" }}>
-            Key products
-          </p>
-          <p className="text-sm text-gray-600">{company.key_products}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#6B5E52" }}>Key products</p>
+          <p className="text-sm" style={{ color: "#6B5E52" }}>{company.key_products}</p>
         </div>
       )}
 
-      {company.website && (
-        <a
-          href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
-          style={{ color: "#C4622D" }}
-        >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          <span className="truncate">{company.website.replace(/^https?:\/\//, "")}</span>
-        </a>
-      )}
+      {company.website && <WebsiteLink url={company.website} />}
     </>
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+// ── Tier 1: Not logged in — limited visible, rest blurred ─────────────────────
+function AnonymousOverlay({ company, onStartTrial }: { company: Company; onStartTrial: () => void }) {
   return (
-    <div className="flex gap-2">
-      <dt className="w-24 flex-shrink-0 text-gray-400 font-medium">{label}</dt>
-      <dd className="text-gray-700">{children}</dd>
-    </div>
-  );
-}
+    <>
+      {/* Visible: city + description */}
+      <p className="text-sm mb-3" style={{ color: "#6B5E52" }}>
+        {company.city}{company.province ? `, ${company.province}` : ""}
+      </p>
 
-function GateOverlay({ isLoggedIn, onAction, color }: { isLoggedIn: boolean; onAction: () => void; color: string }) {
-  return (
-    <div>
-      {/* Blurred placeholder content */}
-      <div className="relative mb-4">
-        <div className="blur-sm select-none pointer-events-none space-y-2 text-sm text-gray-600">
-          <p>This Chinese biotech company is active in sequencing technology and genomics research, with a significant presence across major research hubs.</p>
-          <div className="space-y-1.5">
-            {["Location", "Founded", "Stage", "Funding"].map((l) => (
-              <div key={l} className="flex gap-2">
-                <span className="w-24 text-gray-400 font-medium">{l}</span>
-                <span className="bg-gray-200 rounded text-gray-200">████████████</span>
-              </div>
-            ))}
+      {company.description && (
+        <p className="text-sm leading-relaxed mb-4" style={{ color: "#6B5E52" }}>{company.description}</p>
+      )}
+
+      {/* Blurred premium fields */}
+      <div className="relative mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid #E0D5C5" }}>
+        <div className="px-3 py-3 space-y-1.5 text-sm blur-sm select-none pointer-events-none">
+          {[
+            ["Stage", "Series B"],
+            ["Funding", "¥450M"],
+            ["Employees", "201–500"],
+            ["Technology", "NGS Instruments"],
+          ].map(([label, val]) => (
+            <div key={label} className="flex gap-2">
+              <span className="w-24 flex-shrink-0 font-medium" style={{ color: "#6B5E52" }}>{label}</span>
+              <span style={{ color: "#1C1C1C" }}>{val}</span>
+            </div>
+          ))}
+          <div className="pt-1">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: "#6B5E52" }}>Key products</p>
+            <p style={{ color: "#6B5E52" }}>DNBSEQ Sequencing Platform, MGI-2000</p>
           </div>
         </div>
-        {/* Lock overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center mb-2 shadow-sm bg-white border border-gray-100">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+
+        {/* Lock icon centred over blur */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white" style={{ border: "1px solid #E0D5C5", boxShadow: "0 1px 4px rgba(28,28,28,0.08)" }}>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: "#6B5E52" }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -141,35 +146,95 @@ function GateOverlay({ isLoggedIn, onAction, color }: { isLoggedIn: boolean; onA
       </div>
 
       {/* CTA */}
-      <div className="rounded-xl p-4 text-center border" style={{ backgroundColor: "#F5EFE6", borderColor: "#8B3A2F18" }}>
-        {isLoggedIn ? (
-          <>
-            <p className="text-sm font-semibold text-gray-800 mb-1">Your free trial has ended</p>
-            <p className="text-xs text-gray-500 mb-3">Upgrade to continue accessing company profiles.</p>
-            <a
-              href="https://bridgecrossbio.substack.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-4 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#8B3A2F" }}
-            >
-              Upgrade on Substack →
-            </a>
-          </>
-        ) : (
-          <>
-            <p className="text-sm font-semibold text-gray-800 mb-1">Free 3-day trial</p>
-            <p className="text-xs text-gray-500 mb-3">Sign up to access all {55} company profiles. No credit card required.</p>
-            <button
-              onClick={onAction}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#8B3A2F" }}
-            >
-              Start free trial →
-            </button>
-          </>
-        )}
+      <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
+        <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Start your free trial to unlock full data</p>
+        <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>14-day free trial — full access to all 55+ company profiles.</p>
+        <button
+          onClick={onStartTrial}
+          className="px-5 py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
+        >
+          Start Free Trial →
+        </button>
       </div>
+    </>
+  );
+}
+
+// ── Trial expired (logged in, no active subscription) ─────────────────────────
+function TrialExpiredOverlay() {
+  const [upgrading, setUpgrading] = useState(false);
+
+  async function handleUpgrade() {
+    setUpgrading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const { url, error } = await res.json();
+      if (url) window.location.href = url;
+      else console.error("Checkout error:", error);
+    } catch (err) {
+      console.error("Checkout error:", err);
+    } finally {
+      setUpgrading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl p-4 text-center mt-2" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
+      <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Your trial has ended</p>
+      <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>Subscribe to continue accessing full company data.</p>
+      <button
+        onClick={handleUpgrade}
+        disabled={upgrading}
+        className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{ backgroundColor: "#B83A2A" }}
+      >
+        {upgrading ? "Redirecting…" : "Subscribe now →"}
+      </button>
     </div>
+  );
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+function LogoImage({ domain, name }: { domain: string; name: string }) {
+  const token = process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN;
+  const src = `https://img.logo.dev/${domain}?token=${token}&size=80`;
+  return (
+    <img
+      src={src}
+      alt={`${name} logo`}
+      style={{ height: "48px", width: "auto", maxWidth: "160px", display: "block", marginBottom: "12px" }}
+      onError={(e) => { e.currentTarget.style.display = "none"; }}
+    />
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="w-24 flex-shrink-0 font-medium text-sm" style={{ color: "#6B5E52" }}>{label}</dt>
+      <dd className="text-sm" style={{ color: "#1C1C1C" }}>{children}</dd>
+    </div>
+  );
+}
+
+function WebsiteLink({ url }: { url: string }) {
+  return (
+    <a
+      href={url.startsWith("http") ? url : `https://${url}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+      style={{ color: "#B83A2A" }}
+    >
+      <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+      <span className="truncate">{url.replace(/^https?:\/\//, "")}</span>
+    </a>
   );
 }

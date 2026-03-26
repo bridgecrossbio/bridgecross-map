@@ -17,7 +17,7 @@ interface Tab {
   description: string;
   fields: Field[];
   subjectPrefix: string;
-  subjectKey?: string; // field key to append to subject
+  subjectKey?: string;
 }
 
 interface Field {
@@ -145,27 +145,28 @@ function ContactForm({ tab }: { tab: Tab }) {
   if (status === "success") {
     return (
       <div className="py-10 text-center">
-        <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#C4622D18" }}>
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#C4622D" strokeWidth={2}>
+        <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#B83A2A18" }}>
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="#B83A2A" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="font-semibold text-gray-900 mb-1">Message sent</p>
-        <p className="text-sm text-gray-500">Thanks — we'll be in touch soon.</p>
-        <button onClick={() => setStatus("idle")} className="mt-4 text-sm underline" style={{ color: "#C4622D" }}>
+        <p className="font-semibold mb-1" style={{ color: "#1C1C1C" }}>Message sent</p>
+        <p className="text-sm" style={{ color: "#6B5E52" }}>Thanks — we'll be in touch soon.</p>
+        <button onClick={() => setStatus("idle")} className="mt-4 text-sm underline" style={{ color: "#B83A2A" }}>
           Send another
         </button>
       </div>
     );
   }
 
+  const inputCls = "w-full px-3 py-2.5 text-sm rounded-lg focus:outline-none transition-colors bg-white";
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
       {tab.fields.map((field) => {
-        const commonCls = "w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8B3A2F]/20 focus:border-[#8B3A2F]/40 transition-colors bg-white";
         return (
           <div key={field.key}>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#6B5E52" }}>
               {field.label}{field.required && <span className="text-red-400 ml-0.5">*</span>}
             </label>
             {field.type === "textarea" ? (
@@ -175,14 +176,18 @@ function ContactForm({ tab }: { tab: Tab }) {
                 onChange={(e) => set(field.key, e.target.value)}
                 rows={3}
                 placeholder={field.placeholder}
-                className={commonCls}
+                className={inputCls}
+                style={{ border: "1px solid #E0D5C5", color: "#1C1C1C" }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#B83A2A"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E0D5C5"; }}
               />
             ) : field.type === "select" ? (
               <select
                 required={field.required}
                 value={values[field.key] ?? ""}
                 onChange={(e) => set(field.key, e.target.value)}
-                className={commonCls}
+                className={inputCls}
+                style={{ border: "1px solid #E0D5C5", color: "#1C1C1C" }}
               >
                 <option value="">Select…</option>
                 {field.options?.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -194,7 +199,10 @@ function ContactForm({ tab }: { tab: Tab }) {
                 value={values[field.key] ?? ""}
                 onChange={(e) => set(field.key, e.target.value)}
                 placeholder={field.placeholder}
-                className={commonCls}
+                className={inputCls}
+                style={{ border: "1px solid #E0D5C5", color: "#1C1C1C" }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "#B83A2A"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "#E0D5C5"; }}
               />
             )}
           </div>
@@ -210,8 +218,8 @@ function ContactForm({ tab }: { tab: Tab }) {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-60"
-        style={{ backgroundColor: "#8B3A2F" }}
+        className="w-full py-2.5 rounded-full text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+        style={{ backgroundColor: "#B83A2A" }}
       >
         {submitting ? "Sending…" : "Send Message"}
       </button>
@@ -226,11 +234,11 @@ export default function ContactPage() {
   return (
     <PageLayout>
       <div className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "#C4622D" }}>
+        <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "#B83A2A" }}>
           Contact
         </p>
-        <h1 className="text-3xl font-bold mb-1" style={{ color: "#8B3A2F" }}>Get in Touch</h1>
-        <p className="text-gray-500 mb-8">We'd love to hear from you.</p>
+        <h1 className="text-3xl font-bold mb-1" style={{ color: "#1C1C1C" }}>Get in Touch</h1>
+        <p className="mb-8" style={{ color: "#6B5E52" }}>We'd love to hear from you.</p>
 
         {/* Tab bar */}
         <div className="flex flex-wrap gap-2 mb-6">
@@ -240,8 +248,9 @@ export default function ContactPage() {
               onClick={() => setActiveTab(t.id)}
               className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
               style={{
-                backgroundColor: activeTab === t.id ? "#8B3A2F" : "#8B3A2F12",
-                color: activeTab === t.id ? "white" : "#8B3A2F",
+                backgroundColor: activeTab === t.id ? "#B83A2A" : "#FFFFFF",
+                color: activeTab === t.id ? "#FFFFFF" : "#1C1C1C",
+                border: `1px solid ${activeTab === t.id ? "#B83A2A" : "#E0D5C5"}`,
               }}
             >
               {t.label}
@@ -250,8 +259,8 @@ export default function ContactPage() {
         </div>
 
         {/* Form card */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#8B3A2F]/8">
-          <p className="text-sm text-gray-500 mb-4">{tab.description}</p>
+        <div className="bg-white rounded-2xl p-6" style={{ border: "1px solid #E0D5C5", boxShadow: "0 1px 4px rgba(28,28,28,0.06)" }}>
+          <p className="text-sm mb-4" style={{ color: "#6B5E52" }}>{tab.description}</p>
           <ContactForm key={activeTab} tab={tab} />
         </div>
       </div>
