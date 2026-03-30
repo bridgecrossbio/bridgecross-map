@@ -14,6 +14,9 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "BridgeCross Map — Chinese Biotech",
   description: "Interactive map of Chinese biotech companies across sequencing, DNA synthesis, liquid biopsy, and AI drug discovery.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
