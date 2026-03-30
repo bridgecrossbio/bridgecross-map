@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SignupModalProvider } from "@/lib/signup-modal-context";
 import Header from "@/components/Header";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </SignupModalProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
