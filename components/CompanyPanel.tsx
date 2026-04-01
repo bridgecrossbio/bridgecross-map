@@ -4,18 +4,16 @@ import { useState } from "react";
 import { Company } from "@/types/company";
 import { CATEGORY_COLORS } from "@/lib/companies";
 import { supabase } from "@/lib/supabase";
-import { useSignupModal } from "@/lib/signup-modal-context";
 
 interface CompanyPanelProps {
   company: Company;
   onClose: () => void;
-  hasAccess: boolean;  // Tier 2: paid or active trial
-  isLoggedIn: boolean; // used to distinguish trial-expired from anonymous
+  hasAccess: boolean;
+  isLoggedIn: boolean;
 }
 
-export default function CompanyPanel({ company, onClose, hasAccess, isLoggedIn }: CompanyPanelProps) {
+export default function CompanyPanel({ company, onClose, hasAccess }: CompanyPanelProps) {
   const color = CATEGORY_COLORS[company.category] ?? "#B83A2A";
-  const { openModal } = useSignupModal();
 
   return (
     <div
@@ -58,20 +56,18 @@ export default function CompanyPanel({ company, onClose, hasAccess, isLoggedIn }
           </button>
         </div>
 
-        {/* Tier-gated content */}
+        {/* Gated content */}
         {hasAccess ? (
           <FullDetail company={company} />
-        ) : isLoggedIn ? (
-          <TrialExpiredOverlay />
         ) : (
-          <AnonymousOverlay company={company} onStartTrial={openModal} />
+          <EmailGateOverlay company={company} />
         )}
       </div>
     </div>
   );
 }
 
-// ── Tier 2: Full access ────────────────────────────────────────────────────────
+// ── Full access ───────────────────────────────────────────────────────────────
 function FullDetail({ company }: { company: Company }) {
   return (
     <>
@@ -101,15 +97,40 @@ function FullDetail({ company }: { company: Company }) {
   );
 }
 
-// ── Tier 1: Not logged in — limited visible, rest blurred ─────────────────────
-function AnonymousOverlay({ company, onStartTrial }: { company: Company; onStartTrial: () => void }) {
+// ── Email gate ────────────────────────────────────────────────────────────────
+function EmailGateOverlay({ company }: { company: Company }) {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const { error: dbError } = await supabase
+        .from("email_subscribers")
+        .upsert({ email: email.trim().toLowerCase() }, { onConflict: "email" });
+
+      if (dbError) throw dbError;
+
+      localStorage.setItem("bcb_email_access", email.trim().toLowerCase());
+      window.location.reload();
+    } catch (err: any) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <>
-      {/* Visible: city + description */}
+      {/* Always visible: city + description */}
       <p className="text-sm mb-3" style={{ color: "#6B5E52" }}>
         {company.city}{company.province ? `, ${company.province}` : ""}
       </p>
-
       {company.description && (
         <p className="text-sm leading-relaxed mb-4" style={{ color: "#6B5E52" }}>{company.description}</p>
       )}
@@ -133,8 +154,7 @@ function AnonymousOverlay({ company, onStartTrial }: { company: Company; onStart
             <p style={{ color: "#6B5E52" }}>DNBSEQ Sequencing Platform, MGI-2000</p>
           </div>
         </div>
-
-        {/* Lock icon centred over blur */}
+        {/* Lock icon */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-9 h-9 rounded-full flex items-center justify-center bg-white" style={{ border: "1px solid #E0D5C5", boxShadow: "0 1px 4px rgba(28,28,28,0.08)" }}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: "#6B5E52" }}>
@@ -145,57 +165,43 @@ function AnonymousOverlay({ company, onStartTrial }: { company: Company; onStart
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="rounded-xl p-4 text-center" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
-        <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Start your free trial to unlock full data</p>
-        <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>14-day free trial — full access to all 55+ company profiles.</p>
-        <button
-          onClick={onStartTrial}
-          className="px-5 py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
-        >
-          Start Free Trial →
-        </button>
+      {/* Email gate CTA */}
+      <div className="rounded-xl p-4" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
+        <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Unlock full company data — free</p>
+        <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
+          Enter your email to access all 55+ company profiles. You'll be subscribed to the{" "}
+          <a
+            href="https://bridgecrossbio.substack.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#B83A2A", textDecoration: "underline" }}
+          >
+            BridgeCross Bio Substack
+          </a>{" "}
+          — free China biotech intelligence, no spam.
+        </p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <input
+            type="email"
+            required
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={{ border: "1px solid #D0C4B4", backgroundColor: "#FFFFFF", color: "#1C1C1C" }}
+          />
+          {error && <p className="text-xs" style={{ color: "#B83A2A" }}>{error}</p>}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="px-5 py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
+          >
+            {submitting ? "Unlocking…" : "Unlock full access →"}
+          </button>
+        </form>
       </div>
     </>
-  );
-}
-
-// ── Trial expired (logged in, no active subscription) ─────────────────────────
-function TrialExpiredOverlay() {
-  const [upgrading, setUpgrading] = useState(false);
-
-  async function handleUpgrade() {
-    setUpgrading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session?.access_token}` },
-      });
-      const { url, error } = await res.json();
-      if (url) window.location.href = url;
-      else console.error("Checkout error:", error);
-    } catch (err) {
-      console.error("Checkout error:", err);
-    } finally {
-      setUpgrading(false);
-    }
-  }
-
-  return (
-    <div className="rounded-xl p-4 text-center mt-2" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
-      <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Your trial has ended</p>
-      <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>Subscribe to continue accessing full company data.</p>
-      <button
-        onClick={handleUpgrade}
-        disabled={upgrading}
-        className="px-5 py-2 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-        style={{ backgroundColor: "#B83A2A" }}
-      >
-        {upgrading ? "Redirecting…" : "Subscribe now →"}
-      </button>
-    </div>
   );
 }
 

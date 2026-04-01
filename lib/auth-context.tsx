@@ -62,10 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const hasAccess =
-    !!user &&
-    !!profile &&
-    (profile.is_paid || new Date(profile.trial_ends_at) > new Date());
+  const storedEmail = typeof window !== "undefined" ? localStorage.getItem("bcb_email_access") : null;
+
+const hasAccess =
+  !!storedEmail ||
+  (!!user && !!profile && (profile.is_paid || new Date(profile.trial_ends_at) > new Date()));
 
   const signOut = async () => {
     await supabase.auth.signOut();
