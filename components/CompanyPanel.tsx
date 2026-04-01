@@ -97,10 +97,10 @@ function FullDetail({ company }: { company: Company }) {
       {company.slug && (
         <Link
           href={`/companies/${company.slug}`}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold transition-opacity hover:opacity-70"
-          style={{ color: "#B83A2A" }}
+          className="mt-3 block w-full py-2.5 rounded-full text-sm font-bold text-white text-center transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "#B83A2A" }}
         >
-          Learn more →
+          Go Deeper →
         </Link>
       )}
     </>
