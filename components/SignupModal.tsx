@@ -165,13 +165,26 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
                   <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
                 )}
 
+                <p className="text-xs text-center mt-1" style={{ color: "#6B5E52" }}>
+                  By creating an account you agree to receive the{" "}
+                  <a
+                    href="https://bridgecrossbio.substack.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#B83A2A", textDecoration: "underline" }}
+                  >
+                    BridgeCross Bio Substack
+                  </a>{" "}
+                  newsletter — free China biotech intelligence. You can unsubscribe at any time.
+                </p>
+
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full py-3.5 rounded-full text-sm font-bold text-white transition-opacity disabled:opacity-60"
                   style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 12px rgba(184,58,42,0.35)" }}
                 >
-                  {loading ? "Creating account…" : "Create Free Account →"}
+                  {loading ? "Creating account…" : "Create Account & Subscribe Free →"}
                 </button>
               </form>
 
