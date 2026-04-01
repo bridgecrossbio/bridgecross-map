@@ -105,11 +105,12 @@ export default function Header() {
                 className="text-xs transition-colors"
                 style={{
                   fontWeight: 500,
-                  padding: "7px 18px",
+                  padding: "7px 14px",
                   borderRadius: "9999px",
                   border: "1px solid #1C1C1C",
                   background: "transparent",
                   color: "#1C1C1C",
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => {
                   const b = e.currentTarget;
@@ -129,10 +130,11 @@ export default function Header() {
                 className="text-xs text-white transition-colors"
                 style={{
                   fontWeight: 700,
-                  padding: "8px 20px",
+                  padding: "8px 16px",
                   borderRadius: "9999px",
                   backgroundColor: "#B83A2A",
                   boxShadow: "0 2px 8px rgba(184,58,42,0.35)",
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => {
                   const b = e.currentTarget;
