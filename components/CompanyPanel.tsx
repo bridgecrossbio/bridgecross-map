@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Company } from "@/types/company";
 import { CATEGORY_COLORS } from "@/lib/companies";
-import { supabase } from "@/lib/supabase";
+import { useSignupModal } from "@/lib/signup-modal-context";
 
 interface CompanyPanelProps {
   company: Company;
@@ -97,33 +96,9 @@ function FullDetail({ company }: { company: Company }) {
   );
 }
 
-// ── Email gate ────────────────────────────────────────────────────────────────
+// ── Signup gate ───────────────────────────────────────────────────────────────
 function EmailGateOverlay({ company }: { company: Company }) {
-  const [email, setEmail] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const { error: dbError } = await supabase
-        .from("email_subscribers")
-        .upsert({ email: email.trim().toLowerCase() }, { onConflict: "email" });
-
-      if (dbError) throw dbError;
-
-      localStorage.setItem("bcb_email_access", email.trim().toLowerCase());
-      window.location.reload();
-    } catch (err: any) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
+  const { openModal } = useSignupModal();
 
   return (
     <>
@@ -165,41 +140,19 @@ function EmailGateOverlay({ company }: { company: Company }) {
         </div>
       </div>
 
-      {/* Email gate CTA */}
+      {/* Signup CTA */}
       <div className="rounded-xl p-4" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
         <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Unlock full company data — free</p>
         <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
-          Enter your email to access all 55+ company profiles. You'll be subscribed to the{" "}
-          <a
-            href="https://bridgecrossbio.substack.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#B83A2A", textDecoration: "underline" }}
-          >
-            BridgeCross Bio Substack
-          </a>{" "}
-          — free China biotech intelligence, no spam.
+          Create a free account to access all company profiles.
         </p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <input
-            type="email"
-            required
-            placeholder="your@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-            style={{ border: "1px solid #D0C4B4", backgroundColor: "#FFFFFF", color: "#1C1C1C" }}
-          />
-          {error && <p className="text-xs" style={{ color: "#B83A2A" }}>{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-5 py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-            style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
-          >
-            {submitting ? "Unlocking…" : "Unlock full access →"}
-          </button>
-        </form>
+        <button
+          onClick={openModal}
+          className="w-full px-5 py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
+        >
+          Create free account →
+        </button>
       </div>
     </>
   );
