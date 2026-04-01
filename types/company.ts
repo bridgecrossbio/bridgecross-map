@@ -25,4 +25,10 @@ export interface Company {
   employees_range: string | null;
   listed: boolean | null;
   logo_url: string | null;
+  slug: string | null;
+  analysis: string | null;
+  contact_name: string | null;
+  contact_title: string | null;
+  contact_email: string | null;
+  contact_linkedin: string | null;
 }

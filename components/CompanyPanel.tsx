@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Company } from "@/types/company";
 import { CATEGORY_COLORS } from "@/lib/companies";
 import { useSignupModal } from "@/lib/signup-modal-context";
@@ -92,6 +93,16 @@ function FullDetail({ company }: { company: Company }) {
       )}
 
       {company.website && <WebsiteLink url={company.website} />}
+
+      {company.slug && (
+        <Link
+          href={`/companies/${company.slug}`}
+          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold transition-opacity hover:opacity-70"
+          style={{ color: "#B83A2A" }}
+        >
+          Learn more →
+        </Link>
+      )}
     </>
   );
 }
