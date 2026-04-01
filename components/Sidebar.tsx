@@ -113,8 +113,8 @@ export default function Sidebar({
           onMouseEnter={(e) => { e.currentTarget.style.color = "#B83A2A"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "#6B5E52"; }}
         >
-          Get full access for complete company information.{" "}
-          <strong className="group-hover:underline" style={{ color: "inherit" }}>Free 14-day trial.</strong>
+          Get full access.{" "}
+          <strong className="group-hover:underline" style={{ color: "inherit" }}>Create a free account.</strong>
         </button>
       </div>
     </aside>
