@@ -145,7 +145,7 @@ export default function Header() {
                   b.style.boxShadow = "0 2px 8px rgba(184,58,42,0.35)";
                 }}
               >
-                Start free trial
+                Subscribe free
               </button>
             </>
           )}
