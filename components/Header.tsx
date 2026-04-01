@@ -20,31 +20,19 @@ export default function Header() {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 pointer-events-auto">
-      {/* Top support banner */}
-      <div className="h-8 flex items-center justify-center px-4" style={{ backgroundColor: "#B83A2A" }}>
-        <a
-          href="https://bridgecrossbio.substack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-white text-xs font-medium hover:underline tracking-wide"
-        >
-          Free on Substack: interviews, reports and the latest China biotech news →
-        </a>
-      </div>
-
       {/* Main header */}
       <div
         className="border-b flex items-center px-5 gap-6"
         style={{
           backgroundColor: "#F5EDE0",
           borderColor: "#E0D5C5",
-          height: "60px",
+          height: "72px",
         }}
       >
         {/* Left: Logo */}
         <div className="flex-shrink-0 w-52">
           <Link href="/" className="flex items-center gap-2.5">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -5 325.21 285.65" style={{ height: "32px", width: "auto" }} fill="#1C1C1C" aria-label="BridgeCross Bio">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -5 325.21 285.65" style={{ height: "40px", width: "auto" }} fill="#1C1C1C" aria-label="BridgeCross Bio">
               <path d="M212.66,204.25h-125.86c-37.03,0-67.16-30.13-67.16-67.16v-1.09c0-37.03,30.13-67.16,67.16-67.16h125.86v26.5h-125.86c-22.42,0-40.66,18.23-40.66,40.66v1.09c0,22.42,18.23,40.66,40.66,40.66h125.86v26.5h0Z"/>
               <path d="M285.54,82.64v-1.09c0-37.03-30.13-67.16-67.16-67.16h-125.86v26.5h125.86c22.42,0,40.66,18.23,40.66,40.65v1.09c0,22.42-18.23,40.65-40.66,40.65h-125.86v26.5h125.86c22.42,0,40.66,18.23,40.66,40.65v1.09c0,22.42-18.23,40.65-40.66,40.65h-125.86v26.5h125.86c37.03,0,67.16-30.13,67.16-67.16v-1.09c0-22.09-10.77-41.66-27.27-53.91,16.5-12.25,27.27-31.82,27.27-53.91v.04Z"/>
             </svg>
@@ -69,7 +57,7 @@ export default function Header() {
                 href={item.href}
                 className="relative px-3 flex items-center transition-colors"
                 style={{
-                  height: "60px",
+                  height: "72px",
                   fontSize: "12px",
                   fontWeight: 600,
                   letterSpacing: "0.5px",
