@@ -4,21 +4,25 @@ import { createClient } from "@supabase/supabase-js";
 import { Company } from "@/types/company";
 import { CATEGORY_COLORS } from "@/lib/companies";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = 'force-dynamic';
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { data } = await supabase.from("companies").select("name").eq("slug", slug).single();
+  const { data } = await getSupabase().from("companies").select("name").eq("slug", slug).single();
   return { title: data ? `${data.name} — BridgeCross Bio` : "Company — BridgeCross Bio" };
 }
 
 export default async function CompanyProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const { data: company } = await supabase
+  const { data: company } = await getSupabase()
     .from("companies")
     .select("*")
     .eq("slug", slug)
