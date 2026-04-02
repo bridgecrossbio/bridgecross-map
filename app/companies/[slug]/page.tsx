@@ -141,9 +141,19 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
             Deep Dive
           </h2>
           {company.analysis ? (
-            <p className="text-sm leading-relaxed" style={{ color: "#6B5E52", lineHeight: "1.75" }}>
-              {company.analysis}
-            </p>
+            <div className="space-y-3">
+              {company.analysis.split("\n").map((line, i) =>
+                line.trim() === "Key Risks" ? (
+                  <h3 key={i} className="text-base font-bold mt-6" style={{ fontFamily: "Georgia, serif", color: "#1C1C1C" }}>
+                    Key Risks
+                  </h3>
+                ) : line.trim() ? (
+                  <p key={i} className="text-sm leading-relaxed" style={{ color: "#6B5E52", lineHeight: "1.75" }}>
+                    {line}
+                  </p>
+                ) : null
+              )}
+            </div>
           ) : (
             <p className="text-sm italic" style={{ color: "#B8A99A" }}>Detailed analysis coming soon.</p>
           )}
