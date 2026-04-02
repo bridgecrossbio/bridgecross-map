@@ -12,6 +12,8 @@ const FEATURES: { text: string; emoji?: string }[] = [
 ];
 
 export default function SignupModal({ onClose }: { onClose: () => void }) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,13 +33,13 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || !password) return;
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) return;
     setLoading(true);
     setError(null);
 
     // NOTE: Disable email confirmation in Supabase dashboard:
     // Authentication → Settings → "Enable email confirmations" → OFF
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
     });
@@ -48,10 +50,25 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    // Also record in email_subscribers
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Upsert name into profiles table
+    if (data.user) {
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        email: normalizedEmail,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      });
+    }
+
+    // Record in email_subscribers with name
     await supabase
       .from("email_subscribers")
-      .upsert({ email: email.trim().toLowerCase() }, { onConflict: "email" });
+      .upsert(
+        { email: normalizedEmail, first_name: firstName.trim(), last_name: lastName.trim() },
+        { onConflict: "email" }
+      );
 
     setDone(true);
     setTimeout(() => {
@@ -127,6 +144,40 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
               <div className="h-px mb-6" style={{ backgroundColor: "#E0D5C5" }} />
 
               <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#6B5E52" }}>
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Jane"
+                      className={inputCls}
+                      style={{ border: "1px solid #E0D5C5", color: "#1C1C1C", backgroundColor: "#FAFAFA" }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "#B83A2A"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E0D5C5"; }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#6B5E52" }}>
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Smith"
+                      className={inputCls}
+                      style={{ border: "1px solid #E0D5C5", color: "#1C1C1C", backgroundColor: "#FAFAFA" }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "#B83A2A"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E0D5C5"; }}
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#6B5E52" }}>
                     Email address
