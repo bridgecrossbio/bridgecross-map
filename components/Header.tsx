@@ -24,10 +24,9 @@ export default function Header() {
     <div className="fixed top-0 left-0 right-0 z-50 pointer-events-auto">
       {/* Main header */}
       <div
-        className="border-b flex items-center px-5"
+        className="flex items-center px-5"
         style={{
           backgroundColor: "#F5EDE0",
-          borderColor: "#E0D5C5",
           height: "72px",
           gap: "24px",
         }}
