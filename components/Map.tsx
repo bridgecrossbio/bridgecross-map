@@ -44,10 +44,14 @@ function createPieCanvas(props: Record<string, any>): HTMLCanvasElement {
   const total: number = props.point_count;
   const size = total < 10 ? 44 : total < 30 ? 54 : 64;
   const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + "px";
+  canvas.style.height = size + "px";
 
   const ctx = canvas.getContext("2d")!;
+  ctx.scale(dpr, dpr);
   const cx = size / 2;
   const cy = size / 2;
   const outerR = size / 2 - 2;
