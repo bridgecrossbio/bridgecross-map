@@ -92,7 +92,7 @@ function createPieCanvas(props: Record<string, any>): HTMLCanvasElement {
 export default function Map({ companies, selectedCompany, onSelectCompany }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const clusterMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const clusterMarkersRef = useRef<Record<number, mapboxgl.Marker>>({});
   const companiesRef = useRef(companies);
   const onSelectRef = useRef(onSelectCompany);
   companiesRef.current = companies;
@@ -117,39 +117,51 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
 
     function updateClusterMarkers() {
-      // Remove all existing cluster markers
-      for (const m of clusterMarkersRef.current) m.remove();
-      clusterMarkersRef.current = [];
-
       if (!map.isSourceLoaded("companies")) return;
 
       const features = map.querySourceFeatures("companies", {
         filter: ["==", "cluster", true],
       });
 
+      // Build the set of cluster IDs currently rendered
+      const currentIds = new Set<number>();
       const seen = new Set<number>();
+
       for (const f of features) {
         const props = f.properties as Record<string, any>;
         const clusterId = props.cluster_id as number;
         if (seen.has(clusterId)) continue;
         seen.add(clusterId);
+        currentIds.add(clusterId);
 
-        const coords = (f.geometry as GeoJSON.Point).coordinates as [number, number];
-        const canvas = createPieCanvas(props);
-        canvas.style.cursor = "pointer";
+        // Only create a marker if one doesn't already exist for this cluster
+        if (!clusterMarkersRef.current[clusterId]) {
+          const coords = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+          const canvas = createPieCanvas(props);
+          canvas.style.cursor = "pointer";
 
-        canvas.addEventListener("click", () => {
-          const source = map.getSource("companies") as mapboxgl.GeoJSONSource;
-          source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err || zoom == null) return;
-            map.easeTo({ center: coords, zoom });
+          canvas.addEventListener("click", () => {
+            const source = map.getSource("companies") as mapboxgl.GeoJSONSource;
+            source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+              if (err || zoom == null) return;
+              map.easeTo({ center: coords, zoom });
+            });
           });
-        });
 
-        const marker = new mapboxgl.Marker({ element: canvas, anchor: "center" })
-          .setLngLat(coords)
-          .addTo(map);
-        clusterMarkersRef.current.push(marker);
+          const marker = new mapboxgl.Marker({ element: canvas, anchor: "center" })
+            .setLngLat(coords)
+            .addTo(map);
+          clusterMarkersRef.current[clusterId] = marker;
+        }
+      }
+
+      // Remove markers for cluster IDs no longer in the rendered features
+      for (const id of Object.keys(clusterMarkersRef.current)) {
+        const numId = Number(id);
+        if (!currentIds.has(numId)) {
+          clusterMarkersRef.current[numId].remove();
+          delete clusterMarkersRef.current[numId];
+        }
       }
     }
 
@@ -198,9 +210,12 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
         updateClusterMarkers();
       });
 
-      // Also rebuild after pan/zoom settles (clusters change with zoom level)
-      map.on("moveend", updateClusterMarkers);
-      map.on("zoomend", updateClusterMarkers);
+      // Update continuously during zoom animation so markers disappear as soon
+      // as their clusters unpack — prevents double-display with individual pins
+      map.on("zoom", updateClusterMarkers);
+      map.on("render", () => {
+        if (map.isSourceLoaded("companies")) updateClusterMarkers();
+      });
 
       // ── Click individual pin → select company ──────────────────────────────
       map.on("click", "unclustered-point", (e) => {
@@ -217,8 +232,8 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
 
     mapRef.current = map;
     return () => {
-      for (const m of clusterMarkersRef.current) m.remove();
-      clusterMarkersRef.current = [];
+      for (const m of Object.values(clusterMarkersRef.current)) m.remove();
+      clusterMarkersRef.current = {};
       map.remove();
       mapRef.current = null;
     };
