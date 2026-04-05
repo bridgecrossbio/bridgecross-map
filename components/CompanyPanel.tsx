@@ -113,22 +113,25 @@ function EmailGateOverlay({ company }: { company: Company }) {
 
   return (
     <>
-      {/* Always visible: city + description */}
-      <p className="text-sm mb-3" style={{ color: "#6B5E52" }}>
-        {company.city}{company.province ? `, ${company.province}` : ""}
-      </p>
       {company.description && (
         <p className="text-sm leading-relaxed mb-4" style={{ color: "#6B5E52" }}>{company.description}</p>
       )}
+
+      {/* Visible free fields */}
+      <dl className="space-y-1.5 text-sm mb-4">
+        <Row label="Location">{company.city}{company.province ? `, ${company.province}` : ""}</Row>
+        {company.founded && <Row label="Founded">{company.founded}</Row>}
+        {company.funding_stage && <Row label="Stage">{company.funding_stage}</Row>}
+        {company.funding_total && <Row label="Funding">{company.funding_total}</Row>}
+      </dl>
 
       {/* Blurred premium fields */}
       <div className="relative mb-4 rounded-xl overflow-hidden" style={{ border: "1px solid #E0D5C5" }}>
         <div className="px-3 py-3 space-y-1.5 text-sm blur-sm select-none pointer-events-none">
           {[
-            ["Stage", "Series B"],
-            ["Funding", "¥450M"],
             ["Employees", "201–500"],
             ["Technology", "NGS Instruments"],
+            ["Listed", "No"],
           ].map(([label, val]) => (
             <div key={label} className="flex gap-2">
               <span className="w-24 flex-shrink-0 font-medium" style={{ color: "#6B5E52" }}>{label}</span>
@@ -155,7 +158,7 @@ function EmailGateOverlay({ company }: { company: Company }) {
       <div className="rounded-xl p-4" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
         <p className="text-sm font-semibold mb-1" style={{ color: "#1C1C1C" }}>Unlock full company data — free</p>
         <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
-          Create a free account to access all company profiles.
+          Create a free account to access full company profiles.
         </p>
         <button
           onClick={openModal}
