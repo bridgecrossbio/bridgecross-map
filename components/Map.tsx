@@ -3,26 +3,13 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Company, Category } from "@/types/company";
-import { CATEGORY_COLORS, CATEGORIES } from "@/lib/companies";
+import { Company } from "@/types/company";
+import { CATEGORY_COLORS } from "@/lib/companies";
 
 interface MapProps {
   companies: Company[];
   selectedCompany: Company | null;
   onSelectCompany: (company: Company) => void;
-}
-
-// Short property keys for clusterProperties (avoids long strings in expressions)
-const CAT_KEYS: { key: string; category: Category; color: string }[] = CATEGORIES.map((cat, i) => ({
-  key: `c${i}`,
-  category: cat,
-  color: CATEGORY_COLORS[cat],
-}));
-
-// Aggregation expressions for Mapbox source clusterProperties
-const clusterProperties: Record<string, any> = {};
-for (const { key, category } of CAT_KEYS) {
-  clusterProperties[key] = ["+", ["case", ["==", ["get", "category"], category], 1, 0]];
 }
 
 function toGeoJSON(companies: Company[]) {
@@ -33,70 +20,15 @@ function toGeoJSON(companies: Company[]) {
       geometry: { type: "Point" as const, coordinates: [c.lng, c.lat] as [number, number] },
       properties: {
         id: String(c.id),
-        color: CATEGORY_COLORS[c.category] ?? "#CD5438",
-        category: c.category,
+        color: CATEGORY_COLORS[c.category] ?? "#B83A2A",
       },
     })),
   };
 }
 
-function getPieSize(count: number): number {
-  if (count < 6) return 44;
-  if (count < 16) return 54;
-  if (count < 30) return 62;
-  return 70;
-}
-
-function createPieCanvas(props: Record<string, any>): HTMLCanvasElement {
-  const total: number = props.point_count;
-  const size = getPieSize(total);
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  canvas.style.cursor = "pointer";
-
-  const ctx = canvas.getContext("2d")!;
-  const cx = size / 2;
-  const cy = size / 2;
-  const outerR = size / 2 - 1.5;
-  const innerR = size / 3.2;
-
-  // Draw pie segments
-  let angle = -Math.PI / 2;
-  for (const { key, color } of CAT_KEYS) {
-    const count = (props[key] as number) ?? 0;
-    if (!count) continue;
-    const sweep = (count / total) * 2 * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, outerR, angle, angle + sweep);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    angle += sweep;
-  }
-
-  // White inner circle
-  ctx.beginPath();
-  ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-
-  // Count label
-  const fontSize = Math.max(11, Math.round(size / 3.6));
-  ctx.fillStyle = "#1C1C1C";
-  ctx.font = `600 ${fontSize}px sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(String(total), cx, cy);
-
-  return canvas;
-}
-
 export default function Map({ companies, selectedCompany, onSelectCompany }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const clusterMarkersRef = useRef<Map<number, mapboxgl.Marker>>(new Map());
   const companiesRef = useRef(companies);
   const onSelectRef = useRef(onSelectCompany);
   companiesRef.current = companies;
@@ -121,14 +53,50 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
 
     map.on("load", () => {
-      // ── Source with clustering + category count aggregation ────────────────
+      // ── GeoJSON source with clustering ─────────────────────────────────────
       map.addSource("companies", {
         type: "geojson",
         data: toGeoJSON(companiesRef.current),
         cluster: true,
         clusterMaxZoom: 12,
         clusterRadius: 50,
-        clusterProperties,
+      });
+
+      // ── Cluster circles ────────────────────────────────────────────────────
+      map.addLayer({
+        id: "clusters",
+        type: "circle",
+        source: "companies",
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": "#B83A2A",
+          "circle-radius": [
+            "step", ["get", "point_count"],
+            20,
+            10, 26,
+            30, 32,
+          ],
+          "circle-stroke-width": 2.5,
+          "circle-stroke-color": "#ffffff",
+          "circle-opacity": 0.9,
+        },
+      });
+
+      // ── Cluster count label ────────────────────────────────────────────────
+      map.addLayer({
+        id: "cluster-count",
+        type: "symbol",
+        source: "companies",
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+          "text-size": 13,
+          "text-allow-overlap": true,
+        },
+        paint: {
+          "text-color": "#ffffff",
+        },
       });
 
       // ── Individual pins ────────────────────────────────────────────────────
@@ -145,51 +113,19 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
         },
       });
 
-      // ── Pie chart cluster markers ──────────────────────────────────────────
-      map.on("render", () => {
-        if (!map.isSourceLoaded("companies")) return;
-
-        const features = map.querySourceFeatures("companies", {
-          filter: ["has", "point_count"],
-        });
-
-        const activeIds = new Set<number>();
-
-        for (const f of features) {
-          const props = f.properties as Record<string, any>;
-          const clusterId = props.cluster_id as number;
-          if (activeIds.has(clusterId)) continue; // deduplicate
-          activeIds.add(clusterId);
-
-          if (!clusterMarkersRef.current.has(clusterId)) {
-            const coords = (f.geometry as GeoJSON.Point).coordinates as [number, number];
-            const canvas = createPieCanvas(props);
-
-            canvas.addEventListener("click", () => {
-              const source = map.getSource("companies") as mapboxgl.GeoJSONSource;
-              (source.getClusterExpansionZoom(clusterId) as unknown as Promise<number>)
-                .then((zoom) => { map.easeTo({ center: coords, zoom }); })
-                .catch(() => {});
-            });
-
-            const marker = new mapboxgl.Marker({ element: canvas, anchor: "center" })
-              .setLngLat(coords)
-              .addTo(map);
-
-            clusterMarkersRef.current.set(clusterId, marker);
-          }
-        }
-
-        // Remove markers for clusters no longer visible
-        for (const [id, marker] of clusterMarkersRef.current.entries()) {
-          if (!activeIds.has(id)) {
-            marker.remove();
-            clusterMarkersRef.current.delete(id);
-          }
-        }
+      // ── Click cluster → zoom in ────────────────────────────────────────────
+      map.on("click", "clusters", (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ["clusters"] });
+        if (!features.length) return;
+        const clusterId = features[0].properties?.cluster_id as number;
+        const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
+        const source = map.getSource("companies") as mapboxgl.GeoJSONSource;
+        (source.getClusterExpansionZoom(clusterId) as unknown as Promise<number>)
+          .then((zoom) => { map.easeTo({ center: coords, zoom }); })
+          .catch(() => {});
       });
 
-      // ── Click: individual pin → select company ─────────────────────────────
+      // ── Click individual pin → select company ──────────────────────────────
       map.on("click", "unclustered-point", (e) => {
         const id = e.features?.[0]?.properties?.id as string | undefined;
         if (!id) return;
@@ -197,30 +133,23 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
         if (company) onSelectRef.current(company);
       });
 
-      // ── Cursor for individual pins ─────────────────────────────────────────
+      // ── Cursors ────────────────────────────────────────────────────────────
+      map.on("mouseenter", "clusters", () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", "clusters", () => { map.getCanvas().style.cursor = ""; });
       map.on("mouseenter", "unclustered-point", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "unclustered-point", () => { map.getCanvas().style.cursor = ""; });
     });
 
     mapRef.current = map;
-    return () => {
-      for (const marker of clusterMarkersRef.current.values()) marker.remove();
-      clusterMarkersRef.current.clear();
-      map.remove();
-      mapRef.current = null;
-    };
+    return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // ── Update source + clear markers when companies filter changes ──────────────
+  // ── Update source when companies filter changes ──────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const source = map.getSource("companies") as mapboxgl.GeoJSONSource | undefined;
     source?.setData(toGeoJSON(companies));
-
-    // Clear markers so they rebuild from the new cluster data
-    for (const marker of clusterMarkersRef.current.values()) marker.remove();
-    clusterMarkersRef.current.clear();
   }, [companies]);
 
   // ── Highlight selected pin ───────────────────────────────────────────────────
