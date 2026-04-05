@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 export default function PageLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen pt-[92px]" style={{ backgroundColor: "#F5EDE0" }}>
+    <div className="min-h-screen pt-[72px]" style={{ backgroundColor: "#F5EDE0" }}>
       <main className="max-w-[740px] mx-auto px-6 py-12">
         {children}
       </main>
