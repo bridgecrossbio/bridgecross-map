@@ -136,9 +136,10 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
 
         canvas.addEventListener("click", () => {
           const source = map.getSource("companies") as mapboxgl.GeoJSONSource;
-          (source.getClusterExpansionZoom(clusterId) as unknown as Promise<number>)
-            .then((zoom) => { map.easeTo({ center: coords, zoom }); })
-            .catch(() => {});
+          source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err || zoom == null) return;
+            map.easeTo({ center: coords, zoom });
+          });
         });
 
         const marker = new mapboxgl.Marker({ element: canvas, anchor: "center" })
