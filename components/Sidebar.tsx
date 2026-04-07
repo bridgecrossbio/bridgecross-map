@@ -13,13 +13,32 @@ const CAT_ABBREV: Record<Category, string> = {
   "China VC": "VC",
 };
 
+// Returns the longest common prefix of an array of strings (trimmed).
+function commonPrefix(names: string[]): string {
+  if (names.length === 1) return names[0];
+  let prefix = names[0];
+  for (const name of names.slice(1)) {
+    while (prefix.length > 0 && !name.startsWith(prefix)) {
+      prefix = prefix.slice(0, -1).trim();
+    }
+    if (!prefix) break;
+  }
+  return prefix.trim() || names[0];
+}
+
+interface CompanyGroup {
+  representative: Company;       // first entry — used for logo, city, founded, onClick
+  displayName: string;           // common prefix of all names in group
+  categories: Category[];        // all unique categories across the group
+  isSelected: boolean;
+}
+
 interface SidebarProps {
   search: string;
   onSearchChange: (value: string) => void;
   activeCategories: Set<Category>;
   onToggleCategory: (cat: Category) => void;
-  companies: Company[];
-  allCompanies: Company[];
+  companies: Company[];          // filteredCompanies from page
   selectedCompany: Company | null;
   onSelectCompany: (company: Company) => void;
   isLoggedIn: boolean;
@@ -31,40 +50,49 @@ export default function Sidebar({
   activeCategories,
   onToggleCategory,
   companies,
-  allCompanies,
   selectedCompany,
   onSelectCompany,
   isLoggedIn,
 }: SidebarProps) {
   const { openModal } = useSignupModal();
 
-  const cityCount = useMemo(() => new Set(companies.map((c) => c.city)).size, [companies]);
+  // ── Group companies by name_chinese (same parent company = same Chinese name)
+  const groupedCompanies = useMemo((): CompanyGroup[] => {
+    const buckets = new Map<string, Company[]>();
 
-  // Build name → all categories from the full (unfiltered) dataset
-  const nameToCategories = useMemo(() => {
-    const map: Record<string, Category[]> = {};
-    for (const c of allCompanies) {
-      if (!map[c.name]) map[c.name] = [];
-      if (!map[c.name].includes(c.category)) map[c.name].push(c.category);
+    for (const c of companies) {
+      // Use Chinese name as grouping key; fall back to a unique key per record
+      const key = c.name_chinese ? `zh:${c.name_chinese}` : `id:${c.id}`;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key)!.push(c);
     }
-    return map;
-  }, [allCompanies]);
+
+    return Array.from(buckets.values()).map((group) => {
+      const selectedIds = new Set(group.map((c) => c.id));
+      return {
+        representative: group[0],
+        displayName: commonPrefix(group.map((c) => c.name)),
+        categories: [...new Set(group.map((c) => c.category))],
+        isSelected: selectedCompany != null && selectedIds.has(selectedCompany.id),
+      };
+    });
+  }, [companies, selectedCompany]);
+
+  const cityCount = useMemo(
+    () => new Set(companies.map((c) => c.city)).size,
+    [companies],
+  );
 
   const stats = [
-    { value: companies.length, label: "companies" },
+    { value: groupedCompanies.length, label: "companies" },
     { value: activeCategories.size, label: "sectors" },
     { value: cityCount, label: "cities" },
-    { value: 1, label: "country" },
   ];
 
   return (
     <aside
       className="flex-shrink-0 flex flex-col h-full"
-      style={{
-        width: "300px",
-        borderLeft: "1px solid #E0D5C5",
-        backgroundColor: "#FFFFFF",
-      }}
+      style={{ width: "300px", borderLeft: "1px solid #E0D5C5", backgroundColor: "#FFFFFF" }}
     >
       {/* ── Top controls ──────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 p-3 space-y-3" style={{ borderBottom: "1px solid #E0D5C5" }}>
@@ -100,8 +128,8 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Stat pills */}
-        <div className="grid grid-cols-4 gap-1.5">
+        {/* Stat pills — 3 columns */}
+        <div className="grid grid-cols-3 gap-1.5">
           {stats.map(({ value, label }) => (
             <div
               key={label}
@@ -147,76 +175,69 @@ export default function Sidebar({
 
       {/* ── Company list ──────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
-        {companies.map((company) => {
-          const allCats = nameToCategories[company.name] ?? [company.category];
-          const isSelected = selectedCompany?.id === company.id;
-          return (
-            <button
-              key={company.id}
-              onClick={() => onSelectCompany(company)}
-              className="w-full text-left px-4 py-3 flex gap-3 items-start transition-colors"
-              style={{
-                borderBottom: "1px solid #E0D5C5",
-                backgroundColor: isSelected ? "#F5EDE0" : "transparent",
-              }}
-              onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = "#FAF5EE"; }}
-              onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = "transparent"; }}
-            >
-              {/* Logo */}
-              <CompanyLogo company={company} />
+        {groupedCompanies.map(({ representative, displayName, categories, isSelected }) => (
+          <button
+            key={representative.id}
+            onClick={() => onSelectCompany(representative)}
+            className="w-full text-left flex gap-3 items-start transition-colors"
+            style={{
+              padding: "12px 16px",
+              borderBottom: "1px solid #E0D5C5",
+              backgroundColor: isSelected ? "#F5EDE0" : "transparent",
+            }}
+            onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = "#FAF5EE"; }}
+            onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = "transparent"; }}
+          >
+            {/* Logo slot — always 28×28 so all cards align identically */}
+            <CompanyLogo company={representative} />
 
-              {/* Text */}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-tight mb-0.5" style={{ color: "#1C1C1C" }}>
-                  {company.name}
+            {/* Text block */}
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold leading-tight mb-0.5" style={{ color: "#1C1C1C" }}>
+                {displayName}
+              </p>
+              {representative.name_chinese && (
+                <p className="text-xs leading-tight mb-1 truncate" style={{ color: "#6B5E52" }}>
+                  {representative.name_chinese}
                 </p>
-                {company.name_chinese && (
-                  <p className="text-xs leading-tight mb-1 truncate" style={{ color: "#6B5E52" }}>
-                    {company.name_chinese}
-                  </p>
-                )}
-                {/* Category badges — one per category this company appears in */}
-                <div className="flex flex-wrap gap-1 mb-1">
-                  {allCats.map((cat) => (
-                    <span
-                      key={cat}
-                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight"
-                      style={{ backgroundColor: CATEGORY_COLORS[cat] }}
-                    >
-                      {CAT_ABBREV[cat]}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[11px] mb-1" style={{ color: "#9B8E84" }}>
-                  {company.city}{company.founded ? ` · ${company.founded}` : ""}
-                </p>
-                {company.description && (
-                  <p
-                    className="text-xs leading-relaxed"
-                    style={{
-                      color: "#6B5E52",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
+              )}
+              <div className="flex flex-wrap gap-1 mb-1">
+                {categories.map((cat) => (
+                  <span
+                    key={cat}
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight"
+                    style={{ backgroundColor: CATEGORY_COLORS[cat] }}
                   >
-                    {company.description}
-                  </p>
-                )}
+                    {CAT_ABBREV[cat]}
+                  </span>
+                ))}
               </div>
-            </button>
-          );
-        })}
+              <p className="text-[11px] mb-1" style={{ color: "#9B8E84" }}>
+                {representative.city}{representative.founded ? ` · ${representative.founded}` : ""}
+              </p>
+              {representative.description && (
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{
+                    color: "#6B5E52",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {representative.description}
+                </p>
+              )}
+            </div>
+          </button>
+        ))}
       </div>
 
       {/* ── Pinned CTA ────────────────────────────────────────────────────── */}
       {!isLoggedIn && (
         <div className="flex-shrink-0 p-3" style={{ borderTop: "1px solid #E0D5C5" }}>
-          <div
-            className="rounded-xl p-3"
-            style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}
-          >
+          <div className="rounded-xl p-3" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
             <p className="text-sm font-bold mb-1" style={{ color: "#1C1C1C" }}>Unlock full access</p>
             <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
               Create a free account to see all company data
@@ -235,18 +256,22 @@ export default function Sidebar({
   );
 }
 
+// Always renders a 28×28 container so cards stay aligned even when logo is absent
+// or fails to load. Uses visibility:hidden on error rather than display:none.
 function CompanyLogo({ company }: { company: Company }) {
   const token = process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN;
-  if (!company.logo_url || !token) return <div className="w-7 h-7 flex-shrink-0" />;
+  const domain = company.logo_url?.replace(/^https?:\/\/logo\.clearbit\.com\//, "");
 
-  const domain = company.logo_url.replace(/^https?:\/\/logo\.clearbit\.com\//, "");
   return (
-    <img
-      src={`https://img.logo.dev/${domain}?token=${token}&size=56`}
-      alt=""
-      className="flex-shrink-0 rounded object-contain"
-      style={{ width: "28px", height: "28px", marginTop: "1px" }}
-      onError={(e) => { e.currentTarget.style.display = "none"; }}
-    />
+    <div className="flex-shrink-0" style={{ width: 28, height: 28, marginTop: 2 }}>
+      {domain && token && (
+        <img
+          src={`https://img.logo.dev/${domain}?token=${token}&size=56`}
+          alt=""
+          className="w-full h-full rounded object-contain"
+          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+        />
+      )}
+    </div>
   );
 }

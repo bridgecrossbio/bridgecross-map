@@ -104,7 +104,6 @@ export default function Home() {
         activeCategories={activeCategories}
         onToggleCategory={toggleCategory}
         companies={filteredCompanies}
-        allCompanies={companies}
         selectedCompany={selectedCompany}
         onSelectCompany={handleSelectCompany}
         isLoggedIn={!!user}
