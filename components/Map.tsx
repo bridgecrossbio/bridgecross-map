@@ -109,8 +109,8 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/light-v11",
-      center: [104.1954, 35.8617],
-      zoom: 4,
+      center: [104.0, 35.5],
+      zoom: 3.8,
       minZoom: 2,
     });
 
