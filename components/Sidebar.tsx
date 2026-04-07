@@ -5,12 +5,21 @@ import { Company, Category } from "@/types/company";
 import { CATEGORIES, CATEGORY_COLORS } from "@/lib/companies";
 import { useSignupModal } from "@/lib/signup-modal-context";
 
+const CAT_ABBREV: Record<Category, string> = {
+  "Sequencing": "Seq",
+  "Liquid Biopsy": "Liq Biopsy",
+  "DNA Synthesis": "DNA Synth",
+  "AI Drug Discovery": "AI Drug",
+  "China VC": "VC",
+};
+
 interface SidebarProps {
   search: string;
   onSearchChange: (value: string) => void;
   activeCategories: Set<Category>;
   onToggleCategory: (cat: Category) => void;
   companies: Company[];
+  allCompanies: Company[];
   selectedCompany: Company | null;
   onSelectCompany: (company: Company) => void;
   isLoggedIn: boolean;
@@ -22,6 +31,7 @@ export default function Sidebar({
   activeCategories,
   onToggleCategory,
   companies,
+  allCompanies,
   selectedCompany,
   onSelectCompany,
   isLoggedIn,
@@ -29,6 +39,16 @@ export default function Sidebar({
   const { openModal } = useSignupModal();
 
   const cityCount = useMemo(() => new Set(companies.map((c) => c.city)).size, [companies]);
+
+  // Build name → all categories from the full (unfiltered) dataset
+  const nameToCategories = useMemo(() => {
+    const map: Record<string, Category[]> = {};
+    for (const c of allCompanies) {
+      if (!map[c.name]) map[c.name] = [];
+      if (!map[c.name].includes(c.category)) map[c.name].push(c.category);
+    }
+    return map;
+  }, [allCompanies]);
 
   const stats = [
     { value: companies.length, label: "companies" },
@@ -59,7 +79,7 @@ export default function Sidebar({
           </svg>
           <input
             type="text"
-            placeholder="Search companies…"
+            placeholder="Search companies, technology, location..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none transition-colors placeholder:text-[#6B5E52]"
@@ -128,7 +148,7 @@ export default function Sidebar({
       {/* ── Company list ──────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {companies.map((company) => {
-          const color = CATEGORY_COLORS[company.category] ?? "#B83A2A";
+          const allCats = nameToCategories[company.name] ?? [company.category];
           const isSelected = selectedCompany?.id === company.id;
           return (
             <button
@@ -147,22 +167,26 @@ export default function Sidebar({
 
               {/* Text */}
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-1 mb-0.5">
-                  <span className="text-sm font-semibold leading-tight truncate" style={{ color: "#1C1C1C" }}>
-                    {company.name}
-                  </span>
-                  <span
-                    className="flex-shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight"
-                    style={{ backgroundColor: color }}
-                  >
-                    {company.category === "China VC" ? "VC" : company.category.split(" ")[0]}
-                  </span>
-                </div>
+                <p className="text-sm font-semibold leading-tight mb-0.5" style={{ color: "#1C1C1C" }}>
+                  {company.name}
+                </p>
                 {company.name_chinese && (
                   <p className="text-xs leading-tight mb-1 truncate" style={{ color: "#6B5E52" }}>
                     {company.name_chinese}
                   </p>
                 )}
+                {/* Category badges — one per category this company appears in */}
+                <div className="flex flex-wrap gap-1 mb-1">
+                  {allCats.map((cat) => (
+                    <span
+                      key={cat}
+                      className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white leading-tight"
+                      style={{ backgroundColor: CATEGORY_COLORS[cat] }}
+                    >
+                      {CAT_ABBREV[cat]}
+                    </span>
+                  ))}
+                </div>
                 <p className="text-[11px] mb-1" style={{ color: "#9B8E84" }}>
                   {company.city}{company.founded ? ` · ${company.founded}` : ""}
                 </p>
@@ -188,17 +212,23 @@ export default function Sidebar({
 
       {/* ── Pinned CTA ────────────────────────────────────────────────────── */}
       {!isLoggedIn && (
-        <div className="flex-shrink-0 px-4 py-3" style={{ borderTop: "1px solid #E0D5C5", backgroundColor: "#EDE3D3" }}>
-          <button
-            onClick={openModal}
-            className="text-xs text-left w-full group"
-            style={{ color: "#6B5E52", cursor: "pointer", transition: "color 0.15s ease" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#B83A2A"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#6B5E52"; }}
+        <div className="flex-shrink-0 p-3" style={{ borderTop: "1px solid #E0D5C5" }}>
+          <div
+            className="rounded-xl p-3"
+            style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}
           >
-            Get full access.{" "}
-            <strong className="group-hover:underline" style={{ color: "inherit" }}>Create a free account.</strong>
-          </button>
+            <p className="text-sm font-bold mb-1" style={{ color: "#1C1C1C" }}>Unlock full access</p>
+            <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
+              Create a free account to see all company data
+            </p>
+            <button
+              onClick={openModal}
+              className="w-full py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
+            >
+              Subscribe free →
+            </button>
+          </div>
         </div>
       )}
     </aside>
