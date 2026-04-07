@@ -24,24 +24,12 @@ export default function Home() {
   useEffect(() => {
     fetchCompanies()
       .then((data) => {
-        console.log("Total fetched from Supabase:", data?.length);
-        console.log("Companies with missing category:", data?.filter((c) => !c.category));
-        console.log("Distinct categories:", [...new Set(data?.map((c) => c.category))]);
-
         const validCategories = new Set<string>(CATEGORIES);
         const filtered = (data ?? []).filter((c): c is Company => {
-          if (c.lat == null || c.lng == null) {
-            console.log(`[dropped] "${c.name}" — missing lat/lng`);
-            return false;
-          }
-          if (!validCategories.has(c.category)) {
-            console.log(`[dropped] "${c.name}" — unrecognised category: "${c.category}"`);
-            return false;
-          }
+          if (c.lat == null || c.lng == null) return false;
+          if (!validCategories.has(c.category)) return false;
           return true;
         });
-
-        console.log("Companies passed to map:", filtered.length);
         setCompanies(filtered);
       })
       .catch((err) => setError(err.message))
@@ -75,44 +63,51 @@ export default function Home() {
   };
 
   return (
-    <main className="relative z-0 w-screen overflow-hidden h-[calc(100vh-72px)] mt-[72px]">
-      <Map
-        companies={filteredCompanies}
-        selectedCompany={selectedCompany}
-        onSelectCompany={handleSelectCompany}
-      />
+    <main className="flex w-screen overflow-hidden h-[calc(100vh-72px)] mt-[72px]">
+      {/* ── Map (fills remaining width) ───────────────────────────────────── */}
+      <div className="relative flex-1 min-w-0">
+        <Map
+          companies={filteredCompanies}
+          selectedCompany={selectedCompany}
+          onSelectCompany={handleSelectCompany}
+        />
 
+        {selectedCompany && (
+          <CompanyPanel
+            company={selectedCompany}
+            onClose={() => setSelectedCompany(null)}
+            hasAccess={hasAccess}
+            isLoggedIn={!!user}
+          />
+        )}
+
+        {loading && (
+          <div className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg text-sm text-gray-500 flex items-center gap-2">
+            <svg className="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            Loading companies…
+          </div>
+        )}
+        {error && (
+          <div className="absolute top-4 right-4 z-20 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 shadow-lg text-sm text-red-600">
+            Failed to load: {error}
+          </div>
+        )}
+      </div>
+
+      {/* ── Right sidebar ─────────────────────────────────────────────────── */}
       <Sidebar
         search={search}
         onSearchChange={setSearch}
         activeCategories={activeCategories}
         onToggleCategory={toggleCategory}
-        resultCount={filteredCompanies.length}
+        companies={filteredCompanies}
+        selectedCompany={selectedCompany}
+        onSelectCompany={handleSelectCompany}
+        isLoggedIn={!!user}
       />
-
-      {selectedCompany && (
-        <CompanyPanel
-          company={selectedCompany}
-          onClose={() => setSelectedCompany(null)}
-          hasAccess={hasAccess}
-          isLoggedIn={!!user}
-        />
-      )}
-
-      {loading && (
-        <div className="absolute top-4 right-4 z-20 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-lg text-sm text-gray-500 flex items-center gap-2">
-          <svg className="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-          </svg>
-          Loading companies…
-        </div>
-      )}
-      {error && (
-        <div className="absolute top-4 right-4 z-20 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 shadow-lg text-sm text-red-600">
-          Failed to load: {error}
-        </div>
-      )}
     </main>
   );
 }
