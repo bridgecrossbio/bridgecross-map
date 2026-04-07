@@ -264,8 +264,8 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
     if (selectedCompany) {
       map.flyTo({
         center: [selectedCompany.lng, selectedCompany.lat],
-        zoom: Math.max(map.getZoom(), 6),
-        duration: 700,
+        zoom: Math.max(map.getZoom(), 10),
+        duration: 800,
         offset: [120, 0],
       });
     }

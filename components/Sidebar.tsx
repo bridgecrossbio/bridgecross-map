@@ -56,18 +56,29 @@ export default function Sidebar({
 }: SidebarProps) {
   const { openModal } = useSignupModal();
 
-  // ── Group companies by name_chinese (same parent company = same Chinese name)
+  // ── Group companies by name_chinese (same parent company = same Chinese name).
+  // Special case: all BGI divisions (name_chinese '华大基因' OR name starts 'BGI')
+  // are forced into one group regardless of Chinese name variations.
   const groupedCompanies = useMemo((): CompanyGroup[] => {
     const buckets = new Map<string, Company[]>();
 
+    function groupKey(c: Company): string {
+      if (c.name_chinese === "华大基因" || c.name.startsWith("BGI")) return "group:BGI";
+      if (c.name_chinese) return `zh:${c.name_chinese}`;
+      return `id:${c.id}`;
+    }
+
     for (const c of companies) {
-      // Use Chinese name as grouping key; fall back to a unique key per record
-      const key = c.name_chinese ? `zh:${c.name_chinese}` : `id:${c.id}`;
+      const key = groupKey(c);
       if (!buckets.has(key)) buckets.set(key, []);
       buckets.get(key)!.push(c);
     }
 
     return Array.from(buckets.values()).map((group) => {
+      // For BGI, put the Sequencing entry first so it opens as the primary panel
+      if (group[0] && groupKey(group[0]) === "group:BGI") {
+        group.sort((a) => (a.category === "Sequencing" ? -1 : 1));
+      }
       const selectedIds = new Set(group.map((c) => c.id));
       return {
         representative: group[0],
