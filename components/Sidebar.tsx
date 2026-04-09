@@ -63,15 +63,13 @@ export default function Sidebar({
 }: SidebarProps) {
   const { openModal } = useSignupModal();
 
-  // ── Group companies by name_chinese (same parent company = same Chinese name).
-  // Special case: all BGI divisions (name_chinese '华大基因' OR name starts 'BGI')
-  // are forced into one group regardless of Chinese name variations.
+  // ── Group companies — only the explicit BGI case merges multiple DB rows.
+  // All other companies get their own card keyed by id.
   const groupedCompanies = useMemo((): CompanyGroup[] => {
     const buckets = new Map<string, Company[]>();
 
     function groupKey(c: Company): string {
       if (c.name_chinese === "华大基因" || c.name.startsWith("BGI")) return "group:BGI";
-      if (c.name_chinese) return `zh:${c.name_chinese}`;
       return `id:${c.id}`;
     }
 
