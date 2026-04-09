@@ -54,21 +54,30 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
 
     // Upsert name into profiles table
     if (data.user) {
-      await supabase.from("profiles").upsert({
+      const { error: profileError } = await supabase.from("profiles").upsert({
         id: data.user.id,
         email: normalizedEmail,
         first_name: firstName.trim(),
         last_name: lastName.trim(),
       });
+      if (profileError) console.error("[SignupModal] profiles upsert failed:", profileError);
     }
 
-    // Record in email_subscribers with name
-    await supabase
-      .from("email_subscribers")
-      .upsert(
-        { email: normalizedEmail, first_name: firstName.trim(), last_name: lastName.trim() },
-        { onConflict: "email" }
-      );
+    // Record in email_subscribers via server-side route (uses service role key,
+    // bypasses RLS — client-side anon upsert would fail if table restricts inserts).
+    const subscriberRes = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      }),
+    });
+    if (!subscriberRes.ok) {
+      const body = await subscriberRes.json().catch(() => ({}));
+      console.error("[SignupModal] email_subscribers upsert failed:", body);
+    }
 
     setDone(true);
     setTimeout(() => {
