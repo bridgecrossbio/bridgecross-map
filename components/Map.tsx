@@ -265,22 +265,24 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
     if (selectedCompany) {
       const mobile = window.innerWidth < 768;
       if (mobile) {
-        // Bottom sheet is 50vh; shift focal point up by half that so the pin
-        // lands in the centre of the visible map area above the panel.
-        const bottomSheetHeight = window.innerHeight * 0.5;
+        // Use Mapbox padding to centre the pin within the visible map area above
+        // the bottom sheet. padding tells Mapbox to treat the inset region as
+        // off-limits, so flyTo automatically centres within the remaining space.
+        const headerHeight = 60;
+        const bottomSheetHeight = window.innerHeight * 0.55;
         map.flyTo({
           center: [selectedCompany.lng, selectedCompany.lat],
-          zoom: Math.max(map.getZoom(), 10),
+          zoom: 10,
+          padding: { top: headerHeight, bottom: bottomSheetHeight, left: 40, right: 40 },
           duration: 800,
-          offset: [0, -(bottomSheetHeight / 2)],
         });
       } else {
-        // Desktop: offset right so pin isn't behind the right sidebar panel.
+        // Desktop: pad right so pin isn't behind the 300px sidebar panel.
         map.flyTo({
           center: [selectedCompany.lng, selectedCompany.lat],
           zoom: Math.max(map.getZoom(), 10),
+          padding: { top: 40, bottom: 40, left: 40, right: 320 },
           duration: 800,
-          offset: [120, 0],
         });
       }
     }
