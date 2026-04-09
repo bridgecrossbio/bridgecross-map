@@ -158,8 +158,8 @@ export default function Sidebar({
           ))}
         </div>
 
-        {/* Category filters */}
-        <div className="space-y-1">
+        {/* Category filters — desktop: stacked full-width, mobile: horizontal chips */}
+        <div className="hidden md:block space-y-1">
           {CATEGORIES.map((cat) => {
             const active = activeCategories.has(cat);
             const color = CATEGORY_COLORS[cat];
@@ -181,6 +181,30 @@ export default function Sidebar({
               >
                 <span>{cat === "China VC" ? "VC" : cat}</span>
                 <span style={{ fontSize: "16px", fontWeight: 300, color: active ? "#FFFFFF" : color, lineHeight: 1 }}>
+                  {active ? "−" : "+"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          {CATEGORIES.map((cat) => {
+            const active = activeCategories.has(cat);
+            const color = CATEGORY_COLORS[cat];
+            return (
+              <button
+                key={cat}
+                onClick={() => onToggleCategory(cat)}
+                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                style={{
+                  backgroundColor: active ? color : "#FFFFFF",
+                  border: `1.5px solid ${color}`,
+                  color: active ? "#FFFFFF" : "#1C1C1C",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <span>{cat === "China VC" ? "VC" : cat}</span>
+                <span style={{ color: active ? "#FFFFFF" : color, lineHeight: 1, fontSize: "13px", fontWeight: 300 }}>
                   {active ? "−" : "+"}
                 </span>
               </button>
@@ -252,21 +276,34 @@ export default function Sidebar({
 
       {/* ── Pinned CTA ────────────────────────────────────────────────────── */}
       {!isLoggedIn && (
-        <div className="flex-shrink-0 p-3" style={{ borderTop: "1px solid #E0D5C5" }}>
-          <div className="rounded-xl p-3" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
-            <p className="text-sm font-bold mb-1" style={{ color: "#1C1C1C" }}>Unlock full access</p>
-            <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
-              Create a free account to see all company data
-            </p>
+        <>
+          {/* Mobile: compact single-line text link */}
+          <div className="md:hidden flex-shrink-0 px-4 py-2" style={{ borderTop: "1px solid #E0D5C5" }}>
             <button
               onClick={openModal}
-              className="w-full py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
+              className="text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ color: "#B83A2A" }}
             >
-              Subscribe free →
+              Unlock full access — Subscribe free →
             </button>
           </div>
-        </div>
+          {/* Desktop: full CTA box */}
+          <div className="hidden md:block flex-shrink-0 p-3" style={{ borderTop: "1px solid #E0D5C5" }}>
+            <div className="rounded-xl p-3" style={{ backgroundColor: "#EDE3D3", border: "1px solid #E0D5C5" }}>
+              <p className="text-sm font-bold mb-1" style={{ color: "#1C1C1C" }}>Unlock full access</p>
+              <p className="text-xs mb-3" style={{ color: "#6B5E52" }}>
+                Create a free account to see all company data
+              </p>
+              <button
+                onClick={openModal}
+                className="w-full py-2 rounded-full text-xs font-bold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: "#B83A2A", boxShadow: "0 2px 8px rgba(184,58,42,0.25)" }}
+              >
+                Subscribe free →
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </aside>
   );

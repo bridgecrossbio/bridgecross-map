@@ -165,7 +165,7 @@ export default function Home() {
       {/* Sheet */}
       <div
         className={`md:hidden fixed inset-x-0 bottom-0 z-50 flex flex-col bg-white rounded-t-2xl transition-transform duration-300 ${sidebarOpen ? "translate-y-0" : "translate-y-full"}`}
-        style={{ height: "70vh", boxShadow: "0 -4px 24px rgba(28,28,28,0.12)" }}
+        style={{ height: "72vh", boxShadow: "0 -4px 24px rgba(28,28,28,0.12)" }}
       >
         {/* Drag handle */}
         <div
