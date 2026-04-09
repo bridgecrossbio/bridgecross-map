@@ -13,7 +13,10 @@ const CAT_ABBREV: Record<Category, string> = {
   "China VC": "VC",
 };
 
-// Returns the longest common prefix of an array of strings (trimmed).
+// Returns the longest common prefix of an array of strings, but only if it
+// ends at a word boundary (space or end-of-string). Otherwise returns the
+// first name in full, preventing mid-word truncation (e.g. "Gene" from
+// "Geneplus" + "Genecreate").
 function commonPrefix(names: string[]): string {
   if (names.length === 1) return names[0];
   let prefix = names[0];
@@ -23,7 +26,11 @@ function commonPrefix(names: string[]): string {
     }
     if (!prefix) break;
   }
-  return prefix.trim() || names[0];
+  prefix = prefix.trim();
+  // Reject the prefix if it cuts mid-word in the first name
+  const nextChar = names[0].charAt(prefix.length);
+  if (!prefix || (nextChar !== "" && nextChar !== " ")) return names[0];
+  return prefix;
 }
 
 interface CompanyGroup {
