@@ -151,7 +151,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
                   </h3>
                 ) : (
                   <p key={i} className="text-sm leading-relaxed" style={{ color: "#6B5E52", lineHeight: "1.75" }}>
-                    {text}
+                    {linkifyText(text)}
                   </p>
                 );
               })}
@@ -199,6 +199,33 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
       </div>
     </div>
   );
+}
+
+// Splits a string on URLs and returns an array of plain strings and anchor elements.
+function linkifyText(text: string): React.ReactNode[] {
+  const URL_RE = /https?:\/\/[^\s)>\],"']+/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = URL_RE.exec(text)) !== null) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    const url = match[0];
+    parts.push(
+      <a
+        key={match.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline transition-opacity hover:opacity-75 break-all"
+        style={{ color: "#B83A2A" }}
+      >
+        {url}
+      </a>
+    );
+    last = match.index + url.length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
 }
 
 function DataRow({ label, children }: { label: string; children: React.ReactNode }) {
