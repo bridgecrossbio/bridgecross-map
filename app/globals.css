@@ -47,3 +47,12 @@ h1, h2, h3, h4, h5 {
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(28, 28, 28, 0.08) !important;
 }
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}

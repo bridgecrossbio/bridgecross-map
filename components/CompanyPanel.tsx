@@ -17,13 +17,18 @@ export default function CompanyPanel({ company, onClose, hasAccess }: CompanyPan
 
   return (
     <div
-      className="absolute bottom-6 right-6 z-40 w-80 bg-white rounded-2xl overflow-hidden"
-      style={{ boxShadow: "0 4px 24px rgba(28,28,28,0.12)" }}
+      className="animate-slide-up fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl overflow-hidden md:absolute md:inset-x-auto md:bottom-6 md:right-6 md:z-40 md:w-80 md:rounded-2xl"
+      style={{ boxShadow: "0 -2px 24px rgba(28,28,28,0.12)" }}
     >
+      {/* Mobile drag handle */}
+      <div className="flex justify-center pt-3 pb-1 md:hidden">
+        <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "#E0D5C5" }} />
+      </div>
+
       {/* Colour strip */}
       <div className="h-1.5" style={{ backgroundColor: color }} />
 
-      <div className="p-5 max-h-[82vh] overflow-y-auto">
+      <div className="p-5 max-h-[75vh] md:max-h-[82vh] overflow-y-auto">
         {/* Logo — always visible if present */}
         {company.logo_url && (
           <LogoImage domain={company.logo_url.replace(/^https?:\/\/logo\.clearbit\.com\//, "")} name={company.name} />

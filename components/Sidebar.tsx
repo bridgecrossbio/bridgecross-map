@@ -107,8 +107,8 @@ export default function Sidebar({
 
   return (
     <aside
-      className="flex-shrink-0 flex flex-col h-full"
-      style={{ width: "300px", borderLeft: "1px solid #E0D5C5", backgroundColor: "#FFFFFF" }}
+      className="flex-shrink-0 flex flex-col h-full w-full md:w-[300px] md:border-l md:border-[#E0D5C5]"
+      style={{ backgroundColor: "#FFFFFF" }}
     >
       {/* ── Top controls ──────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 p-3 space-y-3" style={{ borderBottom: "1px solid #E0D5C5" }}>
