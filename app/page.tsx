@@ -25,6 +25,9 @@ export default function Home() {
     fetchCompanies()
       .then((data) => {
         const validCategories = new Set<string>(CATEGORIES);
+        console.log("Total fetched from Supabase:", data?.length);
+        const dropped = data?.filter(c => c.lat == null || c.lng == null || !validCategories.has(c.category));
+        console.log("Dropped companies:", dropped?.map(c => ({ name: c.name, lat: c.lat, lng: c.lng, category: c.category })));
         const filtered = (data ?? []).filter((c): c is Company => {
           if (c.lat == null || c.lng == null) return false;
           if (!validCategories.has(c.category)) return false;
