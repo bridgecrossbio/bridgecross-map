@@ -106,11 +106,12 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
 
     mapboxgl.accessToken = token;
 
+    const isMobile = window.innerWidth < 768;
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/light-v11",
-      center: [104.0, 35.5],
-      zoom: 3.8,
+      center: isMobile ? [116.0, 32.0] : [104.0, 35.5],
+      zoom: isMobile ? 3.8 : 3.8,
       minZoom: 2,
     });
 
@@ -262,11 +263,14 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
     ]);
 
     if (selectedCompany) {
+      const mobile = window.innerWidth < 768;
       map.flyTo({
         center: [selectedCompany.lng, selectedCompany.lat],
-        zoom: Math.max(map.getZoom(), 10),
+        zoom: Math.max(map.getZoom(), mobile ? 8 : 10),
         duration: 800,
-        offset: [120, 0],
+        // Desktop: offset right so pin isn't behind the right sidebar panel.
+        // Mobile: no x-offset; panel appears below the map.
+        offset: mobile ? [0, 0] : [120, 0],
       });
     }
   }, [selectedCompany]);

@@ -187,7 +187,7 @@ export default function Sidebar({
             );
           })}
         </div>
-        <div className="md:hidden flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+        <div className="md:hidden grid grid-cols-2 gap-1.5">
           {CATEGORIES.map((cat) => {
             const active = activeCategories.has(cat);
             const color = CATEGORY_COLORS[cat];
@@ -195,16 +195,20 @@ export default function Sidebar({
               <button
                 key={cat}
                 onClick={() => onToggleCategory(cat)}
-                className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-left"
                 style={{
-                  backgroundColor: active ? color : "#FFFFFF",
-                  border: `1.5px solid ${color}`,
+                  backgroundColor: active ? color : "#F5EDE0",
+                  border: `1px solid ${active ? color : "#E0D5C5"}`,
                   color: active ? "#FFFFFF" : "#1C1C1C",
                   transition: "all 0.15s ease",
                 }}
               >
-                <span>{cat === "China VC" ? "VC" : cat}</span>
-                <span style={{ color: active ? "#FFFFFF" : color, lineHeight: 1, fontSize: "13px", fontWeight: 300 }}>
+                <span
+                  className="flex-shrink-0 rounded-full"
+                  style={{ width: 8, height: 8, backgroundColor: active ? "#FFFFFF" : color }}
+                />
+                <span className="flex-1 truncate">{cat === "China VC" ? "VC" : cat}</span>
+                <span style={{ color: active ? "rgba(255,255,255,0.8)" : color, lineHeight: 1, fontSize: "13px", fontWeight: 300 }}>
                   {active ? "−" : "+"}
                 </span>
               </button>

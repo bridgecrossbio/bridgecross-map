@@ -17,18 +17,26 @@ export default function CompanyPanel({ company, onClose, hasAccess }: CompanyPan
 
   return (
     <div
-      className="animate-slide-up fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl overflow-hidden md:absolute md:inset-x-auto md:bottom-6 md:right-6 md:z-40 md:w-80 md:rounded-2xl"
-      style={{ boxShadow: "0 -2px 24px rgba(28,28,28,0.12)" }}
+      className="animate-slide-up fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl flex flex-col overflow-hidden md:absolute md:inset-x-auto md:bottom-6 md:right-6 md:z-40 md:w-80 md:rounded-2xl md:max-h-[82vh]"
+      style={{ boxShadow: "0 -2px 24px rgba(28,28,28,0.12)", maxHeight: "50vh" }}
     >
       {/* Mobile drag handle */}
       <div className="flex justify-center pt-3 pb-1 md:hidden">
-        <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "#E0D5C5" }} />
+        <div className="w-10 h-1 rounded-full" style={{ backgroundColor: "#D0C5B5" }} />
+      </div>
+
+      {/* Mobile location bar */}
+      <div className="md:hidden flex items-center gap-1.5 px-4 pb-2" style={{ color: "#6B5E52" }}>
+        <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+        <span className="text-xs font-medium truncate">{company.city}{company.province ? `, ${company.province}` : ""}</span>
       </div>
 
       {/* Colour strip */}
-      <div className="h-1.5" style={{ backgroundColor: color }} />
+      <div className="h-1.5 flex-shrink-0" style={{ backgroundColor: color }} />
 
-      <div className="p-5 max-h-[75vh] md:max-h-[82vh] overflow-y-auto">
+      <div className="p-4 md:p-5 overflow-y-auto overflow-x-hidden flex-1">
         {/* Logo — always visible if present */}
         {company.logo_url && (
           <LogoImage domain={company.logo_url.replace(/^https?:\/\/logo\.clearbit\.com\//, "")} name={company.name} />
@@ -36,7 +44,7 @@ export default function CompanyPanel({ company, onClose, hasAccess }: CompanyPan
 
         {/* Header — always visible */}
         <div className="flex items-start justify-between gap-3 mb-3">
-          <div>
+          <div className="min-w-0 flex-1">
             <span
               className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 text-white"
               style={{ backgroundColor: color }}
@@ -195,7 +203,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="flex gap-2">
       <dt className="w-24 flex-shrink-0 font-medium text-sm" style={{ color: "#6B5E52" }}>{label}</dt>
-      <dd className="text-sm" style={{ color: "#1C1C1C" }}>{children}</dd>
+      <dd className="text-sm min-w-0 break-words" style={{ color: "#1C1C1C" }}>{children}</dd>
     </div>
   );
 }
