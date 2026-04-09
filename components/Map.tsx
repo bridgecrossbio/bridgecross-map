@@ -264,14 +264,25 @@ export default function Map({ companies, selectedCompany, onSelectCompany }: Map
 
     if (selectedCompany) {
       const mobile = window.innerWidth < 768;
-      map.flyTo({
-        center: [selectedCompany.lng, selectedCompany.lat],
-        zoom: Math.max(map.getZoom(), mobile ? 8 : 10),
-        duration: 800,
+      if (mobile) {
+        // Bottom sheet is 50vh; shift focal point up by half that so the pin
+        // lands in the centre of the visible map area above the panel.
+        const bottomSheetHeight = window.innerHeight * 0.5;
+        map.flyTo({
+          center: [selectedCompany.lng, selectedCompany.lat],
+          zoom: Math.max(map.getZoom(), 10),
+          duration: 800,
+          offset: [0, -(bottomSheetHeight / 2)],
+        });
+      } else {
         // Desktop: offset right so pin isn't behind the right sidebar panel.
-        // Mobile: no x-offset; panel appears below the map.
-        offset: mobile ? [0, 0] : [120, 0],
-      });
+        map.flyTo({
+          center: [selectedCompany.lng, selectedCompany.lat],
+          zoom: Math.max(map.getZoom(), 10),
+          duration: 800,
+          offset: [120, 0],
+        });
+      }
     }
   }, [selectedCompany]);
 
