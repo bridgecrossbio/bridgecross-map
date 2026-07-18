@@ -6,7 +6,7 @@ import PageLayout from "@/components/PageLayout";
 const FAQS = [
   {
     q: "What companies are included in the map?",
-    a: "The map currently covers Chinese companies across four sectors: Sequencing Technology (instruments and services), DNA Synthesis (technology and service providers), Liquid Biopsy Oncology, and AI Drug Discovery. We also include the major China-focused venture capital firms active in these sectors. The current dataset covers 55 companies and funds.",
+    a: "The map currently covers Chinese companies across five sectors: Sequencing Technology (instruments and services), DNA Synthesis (technology and service providers), Liquid Biopsy Oncology, AI Drug Discovery, and Brain-Computer Interfaces (Visual Restoration). We also include the major China-focused venture capital firms active in these sectors. The current dataset covers 74 companies and funds.",
   },
   {
     q: "How often is the data updated?",

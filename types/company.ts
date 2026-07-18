@@ -3,7 +3,8 @@ export type Category =
   | "DNA Synthesis"
   | "Liquid Biopsy"
   | "AI Drug Discovery"
-  | "China VC";
+  | "China VC"
+  | "Brain-Computer Interface (Visual Restoration)";
 
 export interface Company {
   id: string;

@@ -11,6 +11,7 @@ const CAT_ABBREV: Record<Category, string> = {
   "DNA Synthesis": "DNA Synth",
   "AI Drug Discovery": "AI Drug",
   "China VC": "VC",
+  "Brain-Computer Interface (Visual Restoration)": "BCI",
 };
 
 // Returns the longest common prefix of an array of strings, but only if it
@@ -179,7 +180,7 @@ export default function Sidebar({
                 onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(1.08)"; e.currentTarget.style.transform = "scale(1.02)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.filter = ""; e.currentTarget.style.transform = ""; }}
               >
-                <span>{cat === "China VC" ? "VC" : cat}</span>
+                <span>{cat === "China VC" ? "VC" : cat === "Brain-Computer Interface (Visual Restoration)" ? "BCI (Vision)" : cat}</span>
                 <span style={{ fontSize: "16px", fontWeight: 300, color: active ? "#FFFFFF" : color, lineHeight: 1 }}>
                   {active ? "−" : "+"}
                 </span>
@@ -207,7 +208,7 @@ export default function Sidebar({
                   className="flex-shrink-0 rounded-full"
                   style={{ width: 8, height: 8, backgroundColor: active ? "#FFFFFF" : color }}
                 />
-                <span className="flex-1 truncate">{cat === "China VC" ? "VC" : cat}</span>
+                <span className="flex-1 truncate">{cat === "China VC" ? "VC" : cat === "Brain-Computer Interface (Visual Restoration)" ? "BCI (Vision)" : cat}</span>
                 <span style={{ color: active ? "rgba(255,255,255,0.8)" : color, lineHeight: 1, fontSize: "13px", fontWeight: 300 }}>
                   {active ? "−" : "+"}
                 </span>

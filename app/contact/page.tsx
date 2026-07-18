@@ -41,7 +41,7 @@ const TABS: Tab[] = [
       { key: "website", label: "Website", type: "input", required: true },
       {
         key: "category", label: "Category", type: "select", required: true,
-        options: ["Sequencing", "DNA Synthesis", "Liquid Biopsy", "AI Drug Discovery", "VC"],
+        options: ["Sequencing", "DNA Synthesis", "Liquid Biopsy", "AI Drug Discovery", "Brain-Computer Interface (Visual Restoration)", "VC"],
       },
       { key: "reason", label: "Why should it be included?", type: "textarea", required: true },
       { key: "yourName", label: "Your name", type: "input", required: true },

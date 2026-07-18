@@ -70,7 +70,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
               className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full text-white mt-1.5 flex-shrink-0"
               style={{ backgroundColor: color }}
             >
-              {company.category === "China VC" ? "VC" : company.category}
+              {company.category === "China VC" ? "VC" : company.category === "Brain-Computer Interface (Visual Restoration)" ? "BCI (Vision)" : company.category}
               {company.sub_category ? ` · ${company.sub_category}` : ""}
             </span>
           </div>

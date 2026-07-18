@@ -41,8 +41,9 @@ export default function AboutPage() {
           </p>
           <p>
             The BridgeCross Map is an interactive directory of Chinese biotech companies across
-            four sectors: Sequencing Technology, DNA Synthesis, Liquid Biopsy Oncology, and AI
-            Drug Discovery — plus the venture capital firms backing them.
+            five sectors: Sequencing Technology, DNA Synthesis, Liquid Biopsy Oncology, AI
+            Drug Discovery, and Brain-Computer Interfaces (Visual Restoration) — plus the venture
+            capital firms backing them.
           </p>
         </div>
 
